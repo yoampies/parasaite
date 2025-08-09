@@ -16,10 +16,10 @@ function Navbar() {
         </div>
         <div className="flex flex-1 justify-end gap-8">
         <div className="flex items-center gap-9">
-            <a className="text-[#101816] text-sm font-medium leading-normal" href="#">Inicio</a>
-            <a className="text-[#101816] text-sm font-medium leading-normal" href="#">Escáner</a>
-            <a className="text-[#101816] text-sm font-medium leading-normal" href="#">Historial</a>
-            <a className="text-[#101816] text-sm font-medium leading-normal" href="#">Parásitos</a>
+            <a className="text-[#101816] text-sm font-medium leading-normal" href="/">Inicio</a>
+            <a className="text-[#101816] text-sm font-medium leading-normal" href="/scanner">Escáner</a>
+            <a className="text-[#101816] text-sm font-medium leading-normal" href="/history">Historial</a>
+            <a className="text-[#101816] text-sm font-medium leading-normal" href="/library">Parásitos</a>
         </div>
         <button className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#f0f5f4] text-[#101816] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
             <div className="text-[#101816]" data-icon="Question" data-size="20px" data-weight="regular">
