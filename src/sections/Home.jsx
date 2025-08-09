@@ -23,7 +23,8 @@ const Home = () => {
                   <p className="text-[#07882e] text-base font-medium leading-normal">+15%</p>
                 </div>
                 <div className="grid min-h-[180px] grid-flow-col gap-6 grid-rows-[1fr_auto] items-end justify-items-center px-3">
-                  <div className="border-[#5e8d81] bg-[#f0f5f4] border-t-2 w-full" style={{ height: '20%' }}></div>
+                  <div className="border-[#5e8d81] bg-[#f0f5f4] border-t-2 w-full" style={{ height: '20%' }}>
+                </div>
                   <p className="text-[#5e8d81] text-[13px] font-bold leading-normal tracking-[0.015em]">Tipo A</p>
                   <div className="border-[#5e8d81] bg-[#f0f5f4] border-t-2 w-full" style={{ height: '80%' }}></div>
                   <p className="text-[#5e8d81] text-[13px] font-bold leading-normal tracking-[0.015em]">Tipo B</p>
@@ -39,7 +40,8 @@ const Home = () => {
               <Card title="Edades">
                 <div className="grid min-h-[180px] gap-x-4 gap-y-6 grid-cols-[auto_1fr] items-center py-3">
                   <p className="text-[#5e8d81] text-[13px] font-bold leading-normal tracking-[0.015em]">0-18</p>
-                  <div className="h-full flex-1"><div className="border-[#5e8d81] bg-[#f0f5f4] border-r-2 h-full" style={{ width: '50%' }}></div></div>
+                  <div className="h-full flex-1"><div className="border-[#5e8d81] bg-[#f0f5f4] border-r-2 h-full" style={{ width: '50%' }}></div>
+                </div>
                   <p className="text-[#5e8d81] text-[13px] font-bold leading-normal tracking-[0.015em]">19-35</p>
                   <div className="h-full flex-1"><div className="border-[#5e8d81] bg-[#f0f5f4] border-r-2 h-full" style={{ width: '80%' }}></div></div>
                   <p className="text-[#5e8d81] text-[13px] font-bold leading-normal tracking-[0.015em]">36-60</p>

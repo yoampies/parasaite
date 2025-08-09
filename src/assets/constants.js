@@ -1,3 +1,4 @@
+//History.jsx
 export const recentAnalyses = [
   { id: 1, date: "2024-01-15 10:30 AM", content: "Detected: Plasmodium falciparum (3), Average Confidence: 95%", imgURL: "https://lh3.googleusercontent.com/aida-public/AB6AXuBdfbm3CDY0NleMFV0EYe3e8aH-5Blx1dgN2YTBE1D73_pThB2brPR-ZZPRhhqpMXUvknz0qfVwcg2w1N7kZdd8Z_BNd9mjuPIaAVsNTiDJ0lYEymZDpQylWOyJuUWVh_k8eiDaxZr8MiCLHS9YrpTNN12qNT5J2IFrIBU4zVh07nQ1U6DUHWFFRwPy2sLBNBT2vmyW6aO5cZE89CcHKkhgtTZ6abFV-txenzlC3z-PBJVPZ16vJovDSvNbzLIh_NoFsp9zc788u-lX" },
   { id: 2, date: "2024-01-14 02:45 PM", content: "Detected: Plasmodium vivax (2), Average Confidence: 88%", imgURL: "https://lh3.googleusercontent.com/aida-public/AB6AXuDsECcwAgWbGYmFDFqd-rAHcz1mfOMYflFPEwgViRn9Jo8kmrHWsELDaL3kkTtpgNH-8NuhDHIyZ_adMtHpdloOI4MGtKpkPWpWhAgodexxuImgqjYiUY3PhGiHlOBUt27s2l5PXv4SiQmwRKoPY0pIkORTfr91A5xIwim2CKQ2D44P_LJZfbBCi_2OU-5_a3vUXFwuDo_8QfpxJXJhiShNE8_ojMcASIR3sqRBFSqD_GuxZUC-gmbu-jnH40jzBRg7lgucEjPm4IjD" },
