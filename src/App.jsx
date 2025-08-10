@@ -1,9 +1,12 @@
+// src/app.jsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
 import Home from './sections/Home';
 import Scanner from './sections/Scanner';
 import History from './sections/History';
 import Library from './sections/Library';
 import Settings from './sections/Settings';
+import ParasiteDetails from './sections/ParasiteDetails';
 
 function App() {
   return (
@@ -13,10 +16,11 @@ function App() {
         <Route path="/scanner" element={<Scanner />} />
         <Route path="/history" element={<History />} />
         <Route path="/library" element={<Library />} />
+        <Route path="/library/:parasiteName" element={<ParasiteDetails />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

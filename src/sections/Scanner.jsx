@@ -1,6 +1,7 @@
 import Navbar from "../components/Navbar"
 import Card from "../components/Card"
 import ScannerResults from "./ScannerResults"
+import ImageUploader from "../components/ImageUploader"
 import { recentImages } from "../assets/constants"
 import { useState } from "react"
 
@@ -24,17 +25,7 @@ function Scanner() {
             <div className="flex flex-wrap justify-between gap-3 p-4">
               <p className="text-[#101816] tracking-light text-[32px] font-bold leading-tight min-w-72">Escáner</p>
             </div>
-            <div className="flex flex-col p-4">
-              <div className="flex flex-col items-center gap-6 rounded-lg border-2 border-dashed border-[#dae7e3] px-6 py-14">
-                <div className="flex max-w-[480px] flex-col items-center gap-2">
-                  <p className="text-[#101816] text-lg font-bold leading-tight tracking-[-0.015em] max-w-[480px] text-center">Arrastra y suelta imágenes aquí o haz clic para subir</p>
-                  <p className="text-[#101816] text-sm font-normal leading-normal max-w-[480px] text-center">Formatos de archivo admitidos: JPG, PNG, TIFF</p>
-                </div>
-                <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#f0f5f4] text-[#101816] text-sm font-bold leading-normal tracking-[0.015em]">
-                  <span className="truncate">Subir</span>
-                </button>
-              </div>
-            </div>
+            <ImageUploader instruction="Arrastra y suelta imágenes aquí o haz clic para subir" message="Formatos de archivo admitidos:" typesOfFiles="JPG, PNG, TIFF" />
             <h2 className="text-[#101816] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Imágenes recientes</h2>
               <div className="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4">  
                 {
