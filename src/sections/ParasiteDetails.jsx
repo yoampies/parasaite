@@ -1,31 +1,48 @@
-//Built-in Hooks and Components
+// ParasiteDetails.jsx
+// Built-in Hooks and Components
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-//Components
-import Navbar from '../components/Navbar'; 
+
+// Components
+import Navbar from '../components/Navbar';
 import Error from '../components/Error';
 import SectionRendering from '../components/SectionRendering';
-//Constants
-import { parasites, parasiteData } from '../assets/constants';
+
+// Constants
+import { parasites, parasiteData } from '../assets/constants'; // Asegúrate de que este import sea correcto
 
 const ParasiteDetails = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const { parasiteName } = useParams();
 
+  // Paso 1: Buscar la información del parásito en el array 'parasites'
   const parasite = parasites.find(
     (p) => p.name.toLowerCase().replace(/\s/g, '-') === parasiteName
   );
 
-  if (!parasite) {
+  // Paso 2: Usar el nombre del parásito de la URL para obtener los datos de 'parasiteData'
+  const currentParasiteData = parasiteData[parasiteName];
+
+  // Paso 3: AÑADIR una validación combinada para evitar errores
+  // Si no se encuentra el parásito en el array O en el objeto de datos,
+  // mostrar un componente de error.
+  if (!parasite || !currentParasiteData) {
+    console.log(parasite)
+    console.log(currentParasiteData)
     return (
-      <Error title="Error: Parásito no encontrado" message="Lo sentimos, no pudimos encontrar los detalles para este parásito."
-             linkText="Volver a la librería de parásitos" linkTo="/library"/>
+      <Error
+        title="Error: Parásito no encontrado"
+        message="Lo sentimos, no pudimos encontrar los detalles para este parásito."
+        linkText="Volver a la librería de parásitos"
+        linkTo="/library"
+      />
     );
   }
 
-  const currentParasiteData = parasiteData[parasiteName];
+  // Si llegamos aquí, los datos existen y son seguros de usar.
   const sections = currentParasiteData.tabs[activeTab]?.sections || [];
-  
+  console.log(parasite)
+  console.log(currentParasiteData)
   return (
     <div className="relative flex size-full min-h-screen flex-col bg-white group/design-root overflow-x-hidden font-inter">
       <div className="layout-container flex h-full grow flex-col">

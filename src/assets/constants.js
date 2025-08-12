@@ -289,59 +289,59 @@ export const parasiteData = {
         },
     },
     'giardia-duodenale': {
-      title: 'Giardia duodenale',
-      subtitle: 'Protozoo flagelado',
-      tabs: {
-        overview: {
-          sections: [
-            {
-              title: 'Descripción general',
-              text: 'Giardia duodenale, también conocida como Giardia lamblia, es un protozoo flagelado que causa la giardiasis. Es una de las causas más comunes de enfermedades diarreicas a nivel mundial. La infección se adquiere a través de la ingestión de quistes resistentes que se encuentran en el agua o alimentos contaminados.',
-              imgUrl: 'http://googleusercontent.com/profile/picture/64',
-            },
-            {
-              title: 'Importancia Clínica',
-              text: 'La giardiasis puede causar diarrea acuosa, calambres abdominales, hinchazón, fatiga y pérdida de peso. En algunos casos, la infección puede volverse crónica, llevando a la malabsorción de nutrientes. Es especialmente un problema en guarderías y áreas con agua no potable.',
-            },
-          ],
-        },
-        morphology: {
-          sections: [
-            {
-              title: 'Morfología',
-              text: 'Giardia duodenale existe en dos formas morfológicas: el quiste y el trofozoíto. El trofozoíto es la forma activa y patógena, mientras que el quiste es la forma infecciosa y resistente en el ambiente.',
-            },
-            {
-              title: 'Morfología del Quiste',
-              text: 'El quiste es ovalado y altamente resistente al cloro y a la desecación, lo que permite su supervivencia en el agua y el suelo. Contiene los componentes del futuro trofozoíto. Esta morfología es clave para su diagnóstico.',
-              imgUrl: 'http://googleusercontent.com/profile/picture/65',
-            },
-            {
-              title: 'Morfología del Trofozoíto',
-              text: 'El trofozoíto tiene forma de pera, con simetría bilateral y cuatro pares de flagelos que le permiten moverse. Posee una ventosa adhesiva ventral que utiliza para adherirse a la pared del intestino delgado del huésped.',
-              imgUrl: 'http://googleusercontent.com/profile/picture/66',
-            },
-          ],
-        },
-        lifeCycle: {
-          sections: [
-            {
-              title: 'Ciclo de Vida',
-              text: 'El ciclo de vida de Giardia duodenale es simple y se completa en un solo huésped. Implica la alternancia entre la forma de quiste (infecciosa) y la de trofozoíto (activa).',
-            },
-            {
-              title: 'Etapas del Ciclo de Vida',
-              stages: [
-                { title: 'Ingestión', description: 'El huésped ingiere quistes de Giardia en agua o alimentos contaminados', imgUrl: 'http://googleusercontent.com/profile/picture/67' },
-                { title: 'Exquistación', description: 'En el intestino delgado, el quiste se transforma en trofozoíto', imgUrl: 'http://googleusercontent.com/profile/picture/68' },
-                { title: 'Colonización', description: 'Los trofozoítos se adhieren al revestimiento intestinal para alimentarse y reproducirse', imgUrl: 'http://googleusercontent.com/profile/picture/69' },
-                { title: 'Enquistamiento', description: 'En el colon, los trofozoítos se transforman nuevamente en quistes', imgUrl: 'https://lh3.googleusercontent.com/\n...\nI0' },
-                { title: 'Eliminación', description: 'Los quistes son eliminados en las heces, listos para infectar a un nuevo huésped', imgUrl: 'https://lh3.googleusercontent.com/\n...\nI1' },
-              ],
-            },
-          ],
-        },
-      },
-    },
-  },
+      title: 'Giardia duodenale',
+      subtitle: 'Protozoo flagelado',
+      tabs: {
+        overview: {
+          sections: [
+            {
+              title: 'Descripción general',
+              text: 'Giardia duodenale, también conocida como Giardia lamblia, es un protozoo flagelado que causa la giardiasis. Es una de las causas más comunes de enfermedades diarreicas a nivel mundial. La infección se adquiere a través de la ingestión de quistes resistentes que se encuentran en el agua o alimentos contaminados.',
+              imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG14',
+            },
+            {
+              title: 'Importancia Clínica',
+              text: 'La giardiasis puede causar diarrea acuosa, calambres abdominales, hinchazón, fatiga y pérdida de peso. En algunos casos, la infección puede volverse crónica, llevando a la malabsorción de nutrientes. Es especialmente un problema en guarderías y áreas con agua no potable.',
+            },
+          ],
+        },
+        morphology: {
+          sections: [
+            {
+              title: 'Morfología',
+              text: 'Giardia duodenale existe en dos formas morfológicas: el quiste y el trofozoíto. El trofozoíto es la forma activa y patógena, mientras que el quiste es la forma infecciosa y resistente en el ambiente.',
+            },
+            {
+              title: 'Morfología del Quiste',
+              text: 'El quiste es ovalado y altamente resistente al cloro y a la desecación, lo que permite su supervivencia en el agua y el suelo. Contiene los componentes del futuro trofozoíto. Esta morfología es clave para su diagnóstico.',
+              imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG15',
+            },
+            {
+              title: 'Morfología del Trofozoíto',
+              text: 'El trofozoíto tiene forma de pera, con simetría bilateral y cuatro pares de flagelos que le permiten moverse. Posee una ventosa adhesiva ventral que utiliza para adherirse a la pared del intestino delgado del huésped.',
+              imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG16',
+            },
+          ],
+        },
+        lifeCycle: {
+          sections: [
+            {
+              title: 'Ciclo de Vida',
+              text: 'El ciclo de vida de Giardia duodenale es simple y se completa en un solo huésped. Implica la alternancia entre la forma de quiste (infecciosa) y la de trofozoíto (activa).',
+            },
+            {
+              title: 'Etapas del Ciclo de Vida',
+              stages: [
+                { title: 'Ingestión', description: 'El huésped ingiere quistes de Giardia en agua o alimentos contaminados', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG17' },
+                { title: 'Exquistación', description: 'En el intestino delgado, el quiste se transforma en trofozoíto', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG18' },
+                { title: 'Colonización', description: 'Los trofozoítos se adhieren al revestimiento intestinal para alimentarse y reproducirse', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG19' },
+                { title: 'Enquistamiento', description: 'En el colon, los trofozoítos se transforman nuevamente en quistes', imgUrl: 'https://lh3.googleusercontent.com/\n...\nI0' },
+                { title: 'Eliminación', description: 'Los quistes son eliminados en las heces, listos para infectar a un nuevo huésped', imgUrl: 'https://lh3.googleusercontent.com/\n...\nI1' },
+              ],
+            },
+          ],
+        },
+      },
+    }
+  }
 };

@@ -8,9 +8,9 @@ function SectionRendering({ sections, parasiteName }) {
     const baseName = parasiteName;
     
     let suffix = '';
-    if (title.includes('Adulto')) {
+    if (title.includes('Adulto') || title.includes('Trofozoíto')) {
       suffix = '_A';
-    } else if (title.includes('Huevo')) {
+    } else if (title.includes('Huevo') || title.includes('Quiste') || title.includes('Larva')) {
       suffix = '_H';
     }
 
