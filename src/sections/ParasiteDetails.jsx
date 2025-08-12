@@ -64,7 +64,7 @@ const ParasiteDetails = () => {
                 ))}
               </div>
             </div>
-            <SectionRendering sections={sections}/>
+            <SectionRendering sections={sections} parasiteName={parasiteName}/>
           </div>
         </div>
       </div>
