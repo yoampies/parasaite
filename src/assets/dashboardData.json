@@ -1,0 +1,116 @@
+{
+  "summary": {
+    "parasitesDetected": {
+      "count": 120,
+      "change": "+15%"
+    },
+    "parasitesChart": [
+      {
+        "label": "G. duodenale",
+        "value": 80
+      },
+      {
+        "label": "E. vermicularis",
+        "value": 40
+      },
+      {
+        "label": "A. lumbricoides",
+        "value": 20
+      },
+      {
+        "label": "T. trichiura",
+        "value": 10
+      }
+    ]
+  },
+  "epidemiology": {
+    "ages": [
+      {
+        "label": "0-18",
+        "value": 50
+      },
+      {
+        "label": "19-35",
+        "value": 80
+      },
+      {
+        "label": "36-60",
+        "value": 60
+      },
+      {
+        "label": "61+",
+        "value": 10
+      }
+    ],
+    "sex": [
+      {
+        "label": "Hombre",
+        "value": 10
+      },
+      {
+        "label": "Mujer",
+        "value": 60
+      }
+    ],
+    "race": [
+      {
+        "label": "Caucásico",
+        "value": 90
+      },
+      {
+        "label": "Afroamericano",
+        "value": 20
+      },
+      {
+        "label": "Asiático",
+        "value": 20
+      },
+      {
+        "label": "Otro",
+        "value": 50
+      }
+    ],
+    "comorbidities": [
+      {
+        "label": "Diábetes",
+        "value": 80
+      },
+      {
+        "label": "Hipertensión",
+        "value": 70
+      },
+      {
+        "label": "Enf. Cardiovascular",
+        "value": 10
+      },
+      {
+        "label": "Ninguna",
+        "value": 90
+      }
+    ],
+    "geographicDistribution": [
+      {
+        "label": "Urbana",
+        "value": 70
+      },
+      {
+        "label": "Rural",
+        "value": 20
+      }
+    ],
+    "otherFactors": [
+      {
+        "label": "Historia de Viaje",
+        "value": 30
+      },
+      {
+        "label": "Ocupación",
+        "value": 50
+      },
+      {
+        "label": "Estatus socioeconómico",
+        "value": 30
+      }
+    ]
+  }
+}
