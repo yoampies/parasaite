@@ -23,12 +23,13 @@ function SectionRendering({ sections, parasiteName }) {
     return null;
   };
 
+  const ascarisRotation = parasiteName === 'ascaris-lumbricoides' ? [-2.5, -2, 0] : [0, 0, 0];
+
   return (
     <>
       {sections.map((section, index) => {
         // Obtenemos la ruta del modelo 3D para la sección actual
         const modelPath = getModelPathForSection(section.title);
-
         return (
           <React.Fragment key={index}>
             <h2 className="text-[#101816] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">
@@ -42,8 +43,8 @@ function SectionRendering({ sections, parasiteName }) {
 
             {/* Renderizado condicional: si hay una ruta de modelo 3D, muestra el modelo */}
             {modelPath ? (
-              <div className="p-4">
-                <Model modelPath={modelPath} />
+              <div className="w-full h-[500px] p-4">
+                <Model modelPath={modelPath} rotation={ascarisRotation}/>
               </div>
             ) : (
               // De lo contrario, si hay una imgUrl, muestra la imagen estática
