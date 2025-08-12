@@ -23,7 +23,7 @@ function SectionRendering({ sections, parasiteName }) {
     return null;
   };
 
-  const ascarisRotation = parasiteName === 'ascaris-lumbricoides' ? [-2.5, -2, 0] : [0, 0, 0];
+  const parasiteRotation = parasiteName === 'ascaris-lumbricoides' || 'enterobius-vermicularis' || 'trichuris-trichiura' ? [-2.5, -2, 0] : [0, 0, 0];
 
   return (
     <>
@@ -44,7 +44,7 @@ function SectionRendering({ sections, parasiteName }) {
             {/* Renderizado condicional: si hay una ruta de modelo 3D, muestra el modelo */}
             {modelPath ? (
               <div className="w-full h-[500px] p-4">
-                <Model modelPath={modelPath} rotation={ascarisRotation}/>
+                <Model modelPath={modelPath} rotation={parasiteRotation}/>
               </div>
             ) : (
               // De lo contrario, si hay una imgUrl, muestra la imagen estática
