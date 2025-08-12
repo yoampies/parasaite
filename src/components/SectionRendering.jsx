@@ -8,11 +8,14 @@ function SectionRendering({ sections, parasiteName }) {
     const baseName = parasiteName;
     
     let suffix = '';
-    if (title.includes('Adulto') || title.includes('Trofozoíto')) {
+    const adultStages = ['Adulto', 'Trofozoíto'];
+    const larvalStages = ['Huevo', 'Quiste', 'Larva'];
+
+    if (adultStages.some(stage => title.includes(stage))) {
       suffix = '_A';
-    } else if (title.includes('Huevo') || title.includes('Quiste') || title.includes('Larva')) {
+    } else if (larvalStages.some(stage => title.includes(stage))) {
       suffix = '_H';
-    }
+}
 
     // Si se encontró un sufijo, construimos la ruta completa del modelo
     if (suffix) {
@@ -23,8 +26,7 @@ function SectionRendering({ sections, parasiteName }) {
     return null;
   };
 
-  const parasiteRotation = parasiteName === 'ascaris-lumbricoides' || 'enterobius-vermicularis' || 'trichuris-trichiura' ? [-2.5, -2, 0] : [0, 0, 0];
-
+  const parasiteRotation = ['ascaris-lumbricoides', 'enterobius-vermicularis', 'trichuris-trichiura'].includes(parasiteName) ? [-2.5, -2, 0] : [0, 0, 0];
   return (
     <>
       {sections.map((section, index) => {

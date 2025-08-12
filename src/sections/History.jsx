@@ -6,11 +6,13 @@ import SelectionFilter from "../components/SelectionFilter";
 import ConfidenceLvlFilter from "../components/ConfidenceLvlFilter";
 import CalendarFilter from "../components/CalendarFilter";
 import ButtonFilter from "../components/ButtonFilter";
+import BarChart from "../components/BarChart"
 //Constants
 import { recentAnalyses, parasiteTypes } from "../assets/constants";
 //Tools
 import 'rc-slider/assets/index.css';
-
+//Data
+import data from "../assets/dashboardData.json"
 function History() {
     
   return (
@@ -26,28 +28,6 @@ function History() {
         <div className="gap-1 px-6 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col w-80">
             <Search placeholder="Buscar por fecha, hora o tipo de parásito"/>
-            <div className="flex flex-wrap gap-4 px-4 py-6">
-              <div className="flex min-w-72 flex-1 flex-col gap-2">
-                <p className="text-[#101816] text-base font-medium leading-normal">Distribución de Análisis</p>
-                <p className="text-[#101816] tracking-light text-[32px] font-bold leading-tight truncate">120</p>
-                <div className="flex gap-1">
-                  <p className="text-[#5e8d81] text-base font-normal leading-normal">Últimos 30 Días</p>
-                  <p className="text-[#07882e] text-base font-medium leading-normal">+15%</p>
-                </div>
-                <div className="grid min-h-[180px] grid-flow-col gap-6 grid-rows-[1fr_auto] items-end justify-items-center px-3">
-                  <div className="border-[#5e8d81] bg-[#f0f5f4] border-t-2 w-full" style={{ height: "60%" }}></div>
-                  <p className="text-[#5e8d81] text-[13px] font-bold leading-normal tracking-[0.015em]">Ene 1</p>
-                  <div className="border-[#5e8d81] bg-[#f0f5f4] border-t-2 w-full" style={{ height: "100%" }}></div>
-                  <p className="text-[#5e8d81] text-[13px] font-bold leading-normal tracking-[0.015em]">Ene 8</p>
-                  <div className="border-[#5e8d81] bg-[#f0f5f4] border-t-2 w-full" style={{ height: "50%" }}></div>
-                  <p className="text-[#5e8d81] text-[13px] font-bold leading-normal tracking-[0.015em]">Ene 15</p>
-                  <div className="border-[#5e8d81] bg-[#f0f5f4] border-t-2 w-full" style={{ height: "40%" }}></div>
-                  <p className="text-[#5e8d81] text-[13px] font-bold leading-normal tracking-[0.015em]">Ene 22</p>
-                  <div className="border-[#5e8d81] bg-[#f0f5f4] border-t-2 w-full" style={{ height: "70%" }}></div>
-                  <p className="text-[#5e8d81] text-[13px] font-bold leading-normal tracking-[0.015em]">Ene 29</p>
-                </div>
-              </div>
-            </div>
             <SelectionFilter title="Filtrar por Parásito" options={parasiteTypes} />            
             <ConfidenceLvlFilter title="Filtrar por Nivel de Confianza"/>
             <CalendarFilter title="Filtrar por Fecha" startingDate={7} endingDate={20}/>
