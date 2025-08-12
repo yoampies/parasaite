@@ -7,10 +7,20 @@ import { useState } from "react"
 
 function Scanner() {
   const [showResults, setShowResults] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null); // Estado para la imagen seleccionada
+
   const handleAnalyze = () => {
     setShowResults(true);
     console.log("changed")
   };
+
+  // Función para manejar la selección de una imagen
+  const handleImageSelect = (image) => {
+    setSelectedImage(image);
+  };
+  
+  // Extraer el nombre del archivo de la URL para pasárselo al ImageUploader
+  const selectedFileName = selectedImage ? selectedImage.imgURL.split('/').pop() : null;
 
   if (showResults) {
     return <ScannerResults />;
@@ -25,18 +35,33 @@ function Scanner() {
             <div className="flex flex-wrap justify-between gap-3 p-4">
               <p className="text-[#101816] tracking-light text-[32px] font-bold leading-tight min-w-72">Escáner</p>
             </div>
-            <ImageUploader instruction="Arrastra y suelta imágenes aquí o haz clic para subir" message="Formatos de archivo admitidos:" typesOfFiles="JPG, PNG, TIFF" />
+            {/* Se pasa el nombre de archivo y la función de selección al ImageUploader */}
+            <ImageUploader 
+              instruction="Arrastra y suelta imágenes aquí o haz clic para subir" 
+              message="Formatos de archivo admitidos:" 
+              typesOfFiles="JPG, PNG, TIFF" 
+              selectedFileName={selectedFileName}
+              onFileSelect={(fileName) => setSelectedImage({ imgURL: fileName })} // Maneja la selección desde el uploader
+            />
             <h2 className="text-[#101816] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Imágenes recientes</h2>
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4">  
-                {
-                  recentImages.map((image) => (
-                    <Card key={image.id} 
-                          imgURL={image.imgURL} />
-                  ))
-                }
-              </div>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4">  
+              {
+                recentImages.map((image) => (
+                  <Card 
+                    key={image.id} 
+                    imgURL={image.imgURL} 
+                    // Se añade un onClick para manejar la selección de la imagen
+                    onClick={() => handleImageSelect(image)}
+                    isSelected={selectedImage && selectedImage.id === image.id}
+                  />
+                ))
+              }
+            </div>
             <div className="flex px-4 py-3 justify-end">
-              <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#00c795] text-[#101816] text-sm font-bold leading-normal tracking-[0.015em]" onClick={handleAnalyze}>
+              <button 
+                className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#00c795] text-[#101816] text-sm font-bold leading-normal tracking-[0.015em]" 
+                onClick={handleAnalyze}
+              >
                 <span className="truncate">Analizar</span>
               </button>
             </div>

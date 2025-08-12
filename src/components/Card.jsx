@@ -3,7 +3,7 @@ import HomeCard from "./HomeCard";
 import ScannerCard from "./ScannerCard";
 import RegularCard from "./RegularCard";
 
-function Card({title, content, imgURL, children}) {
+function Card({ title, content, imgURL, children, onClick, isSelected }) {
     const location = useLocation();
     const currentPath = location.pathname;
 
@@ -15,10 +15,10 @@ function Card({title, content, imgURL, children}) {
         )
     }
     if (currentPath === "/scanner") {
-        return <ScannerCard imgURL={imgURL} />
+        return <ScannerCard imgURL={imgURL} onClick={onClick} isSelected={isSelected} />
     }
     return (
-        <RegularCard title={title} content={content} imgURL={imgURL}/>
+        <RegularCard title={title} content={content} imgURL={imgURL} />
     )
 }
 

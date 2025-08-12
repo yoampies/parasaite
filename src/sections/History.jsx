@@ -6,15 +6,19 @@ import SelectionFilter from "../components/SelectionFilter";
 import ConfidenceLvlFilter from "../components/ConfidenceLvlFilter";
 import CalendarFilter from "../components/CalendarFilter";
 import ButtonFilter from "../components/ButtonFilter";
-import BarChart from "../components/BarChart"
 //Constants
 import { recentAnalyses, parasiteTypes } from "../assets/constants";
 //Tools
 import 'rc-slider/assets/index.css';
-//Data
-import data from "../assets/dashboardData.json"
+import { useState } from "react";
+
 function History() {
-    
+    const [currentFilter, setCurrentFilter] = useState(null);
+
+    const handleFilterSelection = (selectedOption) => {
+      setCurrentFilter(selectedOption);
+      console.log("Opción seleccionada:", selectedOption);
+    };
   return (
     <div
       className="relative flex size-full min-h-screen flex-col bg-white group/design-root overflow-x-hidden"
@@ -31,7 +35,7 @@ function History() {
             <SelectionFilter title="Filtrar por Parásito" options={parasiteTypes} />            
             <ConfidenceLvlFilter title="Filtrar por Nivel de Confianza"/>
             <CalendarFilter title="Filtrar por Fecha" startingDate={7} endingDate={20}/>
-            <ButtonFilter title="Filtrar por Estado de Retroalimentación" />
+            <ButtonFilter title="Filtrar por Estado de Retroalimentación" onSelect={handleFilterSelection}/>
           </div>
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             <div className="flex flex-wrap justify-between gap-3 p-4">

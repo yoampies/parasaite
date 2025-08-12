@@ -1,5 +1,3 @@
-// constants.jsx
-
 // History.jsx
 export const recentAnalyses = [
   { id: 1, date: '2024-01-15 10:30 AM', content: 'Detectado: Ascaris lumbricoides (3), Confianza Promedio: 95%', imgURL: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBdfbm3CDY0NleMFV0EYe3e8aH-5Blx1dgN2YTBE1D73_pThB2brPR-ZZPRhhqpMXUvknz0qfVwcg2w1N7kZdd8Z_BNd9mjuPIaAVsNTiDJ0lYEymZDpQylWOyJuUWVh_k8eiDaxZr8MiCLHS9YrpTNN12qNT5J2IFrIBU4zVh07nQ1U6DUHWFFRwPy2sLBNBT2vmyW6aO5cZE89CcHKkhgtTZ6abFV-txenzlC3z-PBJVPZ16vJovDSvNbzLIh_NoFsp9zc788u-lX' },
@@ -17,17 +15,12 @@ export const parasiteTypes = [
   'Giardia duodenale',
 ];
 
-export const weekDays = [
-  { id: 1, name: 'D' },
-  { id: 2, name: 'L' },
-  { id: 3, name: 'M' },
-  { id: 4, name: 'M' },
-  { id: 5, name: 'J' },
-  { id: 6, name: 'V' },
-  { id: 7, name: 'S' },
+export const months = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
-export const feedbackStatus = ['Feedback Pendiente', 'Feedback Enviado'];
+export const feedbackStatus = ['En Progreso', 'Revisado', 'Completado'];
 
 // Scanner.jsx
 export const recentImages = [
