@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from "../components/Navbar";
 import Card from "../components/Card";
 import BarChart from "../components/BarChart";
-import HorizontalBarChart from '../components/HorizontalChart';
+import HorizontalBarChart from '../components/HorizontalBarChart';
 import dashboardData from "../assets/dashboardData.json";
 
 const Home = () => {
