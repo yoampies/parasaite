@@ -1,6 +1,7 @@
 // ScannerResults.jsx
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
+import { gsap } from 'gsap';
 // Componentes
 import Navbar from "../components/Navbar";
 import Table from "../components/Table";
@@ -13,10 +14,71 @@ function ScannerResults() {
     const { analysisId } = useParams();
     const location = useLocation();
 
+    const canvasRef = useRef(null);
+    const imgRef = useRef(null);
+    const [isLoading, setIsLoading] = useState(true);
+
     let analysis = location.state?.analysis;
     if (!analysis) {
         analysis = recentAnalyses.find(a => a.id.toString() === analysisId);
     }
+
+    useEffect(() => {
+        if (!analysis || !imgRef.current) return;
+
+        // Se crea el Web Worker
+        const worker = new Worker('/worker.js');
+
+        // Cuando la imagen se cargue en el navegador, se procesa en el canvas
+        imgRef.current.onload = () => {
+            const canvas = canvasRef.current;
+            const context = canvas.getContext('2d');
+
+            // Aseguramos que el canvas tenga el mismo tamaño que la imagen
+            canvas.width = imgRef.current.naturalWidth;
+            canvas.height = imgRef.current.naturalHeight;
+            context.drawImage(imgRef.current, 0, 0);
+
+            // Inicia la simulación en el Web Worker
+            console.log('Principal: Enviando imagen al Web Worker...');
+            worker.postMessage({ imageData: 'simulated image data' });
+        };
+
+        // Manejar el mensaje que viene del Web Worker
+        worker.onmessage = (e) => {
+            console.log('Principal: Recibiendo coordenadas del Web Worker.');
+            const { x, y, width, height } = e.data;
+            setIsLoading(false);
+            
+            // Dibujamos y animamos el recuadro con GSAP
+            const canvas = canvasRef.current;
+            const context = canvas.getContext('2d');
+            
+            context.strokeStyle = '#D1495B'; // Color del recuadro
+            context.lineWidth = 4; // Grosor de la línea
+            
+            // Animación del recuadro
+            gsap.fromTo(
+                { drawPercent: 0 },
+                { drawPercent: 1 },
+                {
+                    duration: 1.5,
+                    onUpdate: function() {
+                        context.clearRect(0, 0, canvas.width, canvas.height);
+                        context.drawImage(imgRef.current, 0, 0);
+                        
+                        const currentWidth = width * this.targets()[0].drawPercent;
+                        const currentHeight = height * this.targets()[0].drawPercent;
+                        
+                        context.strokeRect(x, y, currentWidth, currentHeight);
+                    }
+                }
+            );
+        };
+        
+        // Limpiamos el worker al desmontar el componente
+        return () => worker.terminate();
+    }, [analysis]);
 
     if (!analysis) {
         return (
@@ -41,11 +103,21 @@ function ScannerResults() {
                             <p className="text-[#101816] tracking-light text-[32px] font-bold leading-tight min-w-72">Resultados del Análisis</p>
                         </div>
                         <div className="flex w-full grow bg-white @container p-4">
-                            <div className="w-full gap-1 overflow-hidden bg-white @[480px]:gap-2 aspect-[3/2] rounded-lg flex">
-                                <div 
-                                    className="w-full bg-center bg-no-repeat bg-cover aspect-auto rounded-none flex-1" 
-                                    style={{ backgroundImage: `url("${analysis.imgURL}")` }}
-                                ></div>
+                            <div className="w-full gap-1 overflow-hidden bg-white @[480px]:gap-2 aspect-[3/2] rounded-lg flex relative">
+                                {/* Imagen oculta para cargar los datos en el canvas */}
+                                <img 
+                                    ref={imgRef}
+                                    src={analysis.imgURL}
+                                    alt="Imagen del análisis"
+                                    style={{ display: 'none' }}
+                                />
+                                {/* El canvas para dibujar la imagen y la animación */}
+                                <canvas ref={canvasRef} className="w-full h-full object-cover rounded-none"></canvas>
+                                {isLoading && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white text-lg">
+                                        Analizando imagen...
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <h3 className="text-[#101816] text-lg font-bold leading-tight tracking-[-0.015em] px-4 pb-2 pt-4">Parásitos Detectados</h3>

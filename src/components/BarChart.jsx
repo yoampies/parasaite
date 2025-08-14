@@ -19,7 +19,7 @@ const BarChart = ({ data }) => {
     const barFillColor = '#f0f5f4';
     const borderColor = '#5e8d81';
     const textColor = '#5e8d81';
-    const tooltipColor = '#101816';
+    const tooltipColor = '#5e8d81';
 
     // 3. Calcular el valor total de los datos
     const total = sum(data, d => d.value);
