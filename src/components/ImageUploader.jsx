@@ -10,8 +10,7 @@ function ImageUploader({ instruction, message, typesOfFiles, selectedFileName, o
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-      // Comunica el nombre del archivo seleccionado al componente padre
-      onFileSelect(file.name); 
+      onFileSelect(file); 
       console.log('Archivo seleccionado:', file);
     }
   };
@@ -22,7 +21,14 @@ function ImageUploader({ instruction, message, typesOfFiles, selectedFileName, o
         <div className="flex max-w-[480px] flex-col items-center gap-2">
           <p className="text-[#101816] text-lg font-bold leading-tight tracking-[-0.015em] max-w-[480px] text-center">{instruction}</p>
           <p className="text-[#101816] text-sm font-normal leading-normal max-w-[480px] text-center">
-            {selectedFileName ? selectedFileName : `${message} ${typesOfFiles}`}
+            {selectedFileName ? (
+              // 🟢 FIX: Added a span with overflow classes
+              <span className="truncate block">
+                {selectedFileName}
+              </span>
+            ) : (
+              `${message} ${typesOfFiles}`
+            )}
           </p>
         </div>
         <input

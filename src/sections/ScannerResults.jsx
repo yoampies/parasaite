@@ -1,6 +1,7 @@
 // ScannerResults.jsx
-import React, { useEffect, useRef, useState } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 // Componentes
 import Navbar from "../components/Navbar";
@@ -8,77 +9,138 @@ import Table from "../components/Table";
 import HorizontalBarChart from "../components/HorizontalBarChart";
 import Error from '../components/Error';
 // Constantes
-import { recentAnalyses } from '../assets/constants';
+import { recentAnalyses as recentAnalysesConstant, recentImages as recentImagesConstant } from '../assets/constants'; // 🟢 Importamos ambas listas de constantes
 
 function ScannerResults() {
     const { analysisId } = useParams();
     const location = useLocation();
+    const navigate = useNavigate();
 
     const canvasRef = useRef(null);
     const imgRef = useRef(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [analysis, setAnalysis] = useState(null);
+    const [detectedParasites, setDetectedParasites] = useState([]);
 
-    let analysis = location.state?.analysis;
-    if (!analysis) {
-        analysis = recentAnalyses.find(a => a.id.toString() === analysisId);
-    }
+    const saveAnalysisToLocalStorage = useCallback((updatedAnalysis) => {
+        const localAnalyses = JSON.parse(localStorage.getItem('recentAnalyses')) || [];
+        const index = localAnalyses.findIndex(a => a.id === updatedAnalysis.id);
+
+        if (index !== -1) {
+            localAnalyses[index] = updatedAnalysis;
+        } else {
+            // 🟢 Busca en ambas listas de constantes para evitar agregar duplicados
+            const isFromConstants = recentAnalysesConstant.find(a => a.id === updatedAnalysis.id) || recentImagesConstant.find(a => a.id === updatedAnalysis.id);
+            if (!isFromConstants) {
+                localAnalyses.unshift(updatedAnalysis);
+            }
+        }
+        localStorage.setItem('recentAnalyses', JSON.stringify(localAnalyses));
+    }, []);
+
+    useEffect(() => {
+        let currentAnalysis = location.state?.analysis;
+        if (!currentAnalysis) {
+            const localAnalyses = JSON.parse(localStorage.getItem('recentAnalyses')) || [];
+            currentAnalysis = localAnalyses.find(a => a.id.toString() === analysisId);
+            if (!currentAnalysis) {
+                currentAnalysis = recentAnalysesConstant.find(a => a.id.toString() === analysisId);
+            }
+            if (!currentAnalysis) {
+                // 🟢 Busca en la nueva lista de imágenes constantes si no se encuentra en las otras
+                currentAnalysis = recentImagesConstant.find(a => a.id.toString() === analysisId);
+            }
+        }
+        setAnalysis(currentAnalysis);
+    }, [analysisId, location.state]);
+
+    const handleSendFeedback = () => {
+        const analysisWithResults = { ...analysis, detectedParasites };
+        saveAnalysisToLocalStorage(analysisWithResults);
+        localStorage.setItem('currentAnalysis', JSON.stringify(analysisWithResults));
+        navigate(`/feedback/${analysisId}`);
+    };
 
     useEffect(() => {
         if (!analysis || !imgRef.current) return;
 
-        // Se crea el Web Worker
-        const worker = new Worker('/worker.js');
+        const startAnalysis = () => {
+            // 🟢 Revisa si los parásitos ya están en el objeto de análisis
+            if (analysis.detectedParasites && analysis.detectedParasites.length > 0) {
+                setIsLoading(false);
+                setDetectedParasites(analysis.detectedParasites);
+                
+                const canvas = canvasRef.current;
+                const context = canvas.getContext('2d');
+                canvas.width = imgRef.current.naturalWidth;
+                canvas.height = imgRef.current.naturalHeight;
+                context.drawImage(imgRef.current, 0, 0);
 
-        // Cuando la imagen se cargue en el navegador, se procesa en el canvas
-        imgRef.current.onload = () => {
-            const canvas = canvasRef.current;
-            const context = canvas.getContext('2d');
-
-            // Aseguramos que el canvas tenga el mismo tamaño que la imagen
-            canvas.width = imgRef.current.naturalWidth;
-            canvas.height = imgRef.current.naturalHeight;
-            context.drawImage(imgRef.current, 0, 0);
-
-            // Inicia la simulación en el Web Worker
-            console.log('Principal: Enviando imagen al Web Worker...');
-            worker.postMessage({ imageData: 'simulated image data' });
-        };
-
-        // Manejar el mensaje que viene del Web Worker
-        worker.onmessage = (e) => {
-            console.log('Principal: Recibiendo coordenadas del Web Worker.');
-            const { x, y, width, height } = e.data;
-            setIsLoading(false);
-            
-            // Dibujamos y animamos el recuadro con GSAP
-            const canvas = canvasRef.current;
-            const context = canvas.getContext('2d');
-            
-            context.strokeStyle = '#D1495B'; // Color del recuadro
-            context.lineWidth = 4; // Grosor de la línea
-            
-            // Animación del recuadro
-            gsap.fromTo(
-                { drawPercent: 0 },
-                { drawPercent: 1 },
-                {
-                    duration: 1.5,
-                    onUpdate: function() {
-                        context.clearRect(0, 0, canvas.width, canvas.height);
-                        context.drawImage(imgRef.current, 0, 0);
-                        
-                        const currentWidth = width * this.targets()[0].drawPercent;
-                        const currentHeight = height * this.targets()[0].drawPercent;
-                        
-                        context.strokeRect(x, y, currentWidth, currentHeight);
-                    }
+                if (analysis.x && analysis.y && analysis.width && analysis.height) {
+                    context.strokeStyle = '#D1495B';
+                    context.lineWidth = 4;
+                    context.strokeRect(analysis.x, analysis.y, analysis.width, analysis.height);
                 }
-            );
+            } else {
+                // Si no hay parásitos, ejecuta la simulación con el Web Worker
+                const worker = new Worker('/worker.js');
+                const canvas = canvasRef.current;
+                const context = canvas.getContext('2d');
+                canvas.width = imgRef.current.naturalWidth;
+                canvas.height = imgRef.current.naturalHeight;
+                context.drawImage(imgRef.current, 0, 0);
+
+                console.log('Principal: Enviando imagen al Web Worker...');
+                worker.postMessage({
+                    imageData: 'simulated image data',
+                    imageWidth: canvas.width,
+                    imageHeight: canvas.height,
+                });
+
+                worker.onmessage = (e) => {
+                    console.log('Principal: Recibiendo resultados completos del Web Worker.');
+                    const { x, y, width, height, detectedParasites: workerParasites } = e.data;
+                    setIsLoading(false);
+                    setDetectedParasites(workerParasites);
+
+                    context.strokeStyle = '#D1495B';
+                    context.lineWidth = 4;
+
+                    gsap.fromTo(
+                        { drawPercent: 0 },
+                        { drawPercent: 1 },
+                        {
+                            duration: 1.5,
+                            onUpdate: function() {
+                                context.clearRect(0, 0, canvas.width, canvas.height);
+                                context.drawImage(imgRef.current, 0, 0);
+                                const currentWidth = width * this.targets()[0].drawPercent;
+                                const currentHeight = height * this.targets()[0].drawPercent;
+                                context.strokeRect(x, y, currentWidth, currentHeight);
+                            },
+                            onComplete: () => {
+                                const updatedAnalysis = { ...analysis, detectedParasites: workerParasites, x, y, width, height };
+                                saveAnalysisToLocalStorage(updatedAnalysis);
+                            }
+                        }
+                    );
+                };
+                return () => worker.terminate();
+            }
         };
+
+        if (imgRef.current.complete) {
+            startAnalysis();
+        } else {
+            imgRef.current.onload = startAnalysis;
+        }
+
+        imgRef.current.src = analysis.imgURL;
         
-        // Limpiamos el worker al desmontar el componente
-        return () => worker.terminate();
-    }, [analysis]);
+        return () => {
+            imgRef.current.onload = null;
+        };
+    }, [analysis, saveAnalysisToLocalStorage]);
 
     if (!analysis) {
         return (
@@ -91,8 +153,6 @@ function ScannerResults() {
         );
     }
     
-    const detectedParasites = analysis.detectedParasites || [];
-
     return (
         <div className="relative flex size-full min-h-screen flex-col bg-white group/design-root overflow-x-hidden font-inter">
             <div className="layout-container flex h-full grow flex-col">
@@ -104,14 +164,14 @@ function ScannerResults() {
                         </div>
                         <div className="flex w-full grow bg-white @container p-4">
                             <div className="w-full gap-1 overflow-hidden bg-white @[480px]:gap-2 aspect-[3/2] rounded-lg flex relative">
-                                {/* Imagen oculta para cargar los datos en el canvas */}
-                                <img 
-                                    ref={imgRef}
-                                    src={analysis.imgURL}
-                                    alt="Imagen del análisis"
-                                    style={{ display: 'none' }}
-                                />
-                                {/* El canvas para dibujar la imagen y la animación */}
+                                {analysis.imgURL && (
+                                    <img 
+                                        ref={imgRef}
+                                        src={analysis.imgURL}
+                                        alt="Imagen del análisis"
+                                        style={{ display: 'none' }}
+                                    />
+                                )}
                                 <canvas ref={canvasRef} className="w-full h-full object-cover rounded-none"></canvas>
                                 {isLoading && (
                                     <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white text-lg">
@@ -140,7 +200,10 @@ function ScannerResults() {
                             Ayúdanos a mejorar nuestro modelo de detección proporcionando comentarios sobre el análisis. Puedes corregir cualquier parásito mal identificado o agregar nuevos.
                         </p>
                         <div className="flex px-4 py-3 justify-end">
-                            <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#00c795] text-[#101816] text-sm font-bold leading-normal tracking-[0.015em]">
+                            <button
+                                className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#00c795] text-[#101816] text-sm font-bold leading-normal tracking-[0.015em]"
+                                onClick={handleSendFeedback}
+                            >
                                 <span className="truncate">Enviar Comentarios</span>
                             </button>
                         </div>

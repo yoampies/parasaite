@@ -1,3 +1,5 @@
+// History.jsx
+
 //Components
 import Navbar from "../components/Navbar";
 import Card from "../components/Card";
@@ -10,19 +12,35 @@ import ButtonFilter from "../components/ButtonFilter";
 import { recentAnalyses, parasiteTypes } from "../assets/constants";
 //Tools
 import 'rc-slider/assets/index.css';
-import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // 🟢 Importamos useNavigate
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 function History() {
   const [currentFilter, setCurrentFilter] = useState(null);
-  const navigate = useNavigate(); // 🟢 Inicializamos el hook de navegación
+  const [displayedAnalyses, setDisplayedAnalyses] = useState([]);
+  const navigate = useNavigate(); 
+
+  useEffect(() => {
+    // 1. Cargar los análisis guardados en localStorage
+    const storedAnalyses = JSON.parse(localStorage.getItem('recentAnalyses')) || [];
+
+    // 2. Filtrar los análisis de ejemplo de la constante, eliminando los que ya están en el localStorage
+    const filteredConstantAnalyses = recentAnalyses.filter(
+      (constantAnalysis) => 
+        !storedAnalyses.some((storedAnalysis) => storedAnalysis.id === constantAnalysis.id)
+    );
+
+    // 🟢 CAMBIO AQUÍ: Combinar ambos arrays, colocando primero los de la constante
+    const combinedAnalyses = [...filteredConstantAnalyses, ...storedAnalyses];
+    
+    setDisplayedAnalyses(combinedAnalyses);
+  }, []);
 
   const handleFilterSelection = (selectedOption) => {
     setCurrentFilter(selectedOption);
     console.log("Opción seleccionada:", selectedOption);
   };
   
-  // 🟢 Esta es la función que ahora navega a una URL dinámica
   const handleCardClick = (analysisId) => {
       navigate(`/scanner-results/${analysisId}`);
   };
@@ -40,7 +58,7 @@ function History() {
         <div className="gap-1 px-6 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col w-80">
             <Search placeholder="Buscar por fecha, hora o tipo de parásito"/>
-            <SelectionFilter title="Filtrar por Parásito" options={parasiteTypes} />        
+            <SelectionFilter title="Filtrar por Parásito" options={parasiteTypes} />      
             <ConfidenceLvlFilter title="Filtrar por Nivel de Confianza"/>
             <CalendarFilter title="Filtrar por Fecha" startingDate={7} endingDate={20}/>
             <ButtonFilter title="Filtrar por Estado de Retroalimentación" onSelect={handleFilterSelection}/>
@@ -55,13 +73,12 @@ function History() {
               </div>
             </div>
             <h2 className="text-[#101816] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Análisis Recientes</h2>
-            {recentAnalyses.map((analysis) => (
+            {displayedAnalyses.map((analysis) => (
               <Card 
                 key={analysis.id} 
                 title={`Análisis del ${analysis.date}`} 
                 content={analysis.content} 
                 imgURL={analysis.imgURL}
-                // 🟢 Conectamos la función de navegación al evento onClick de la tarjeta
                 onClick={() => handleCardClick(analysis.id)}
               />
             ))}

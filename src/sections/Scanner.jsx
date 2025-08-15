@@ -1,28 +1,66 @@
 // Scanner.jsx
-import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // 🟢 Importamos useNavigate
+
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; 
 import Navbar from "../components/Navbar";
 import Card from "../components/Card";
 import ImageUploader from "../components/ImageUploader";
-import { recentImages } from "../assets/constants";
+import { recentImages as recentImagesConstant } from "../assets/constants";
+import { v4 as uuidv4 } from 'uuid';
 
 function Scanner() {
   const [selectedImage, setSelectedImage] = useState(null);
-  const navigate = useNavigate(); // 🟢 Inicializamos el hook
+  const [displayImages, setDisplayImages] = useState([]);
+  const navigate = useNavigate(); 
 
-  // 🔴 Eliminamos el estado 'showResults' y la función 'handleAnalyze'
+  // 🟢 Este useEffect se encarga de sincronizar los datos de las constantes con localStorage
+  useEffect(() => {
+    const storedAnalyses = JSON.parse(localStorage.getItem('recentAnalyses')) || [];
+    
+    // Filtramos las imágenes de la constante para evitar duplicados en localStorage
+    const newImagesToAdd = recentImagesConstant.filter(
+      (constantImage) =>
+        !storedAnalyses.some((storedAnalysis) => storedAnalysis.id === constantImage.id)
+    );
+    
+    // Combinamos las imágenes de la constante con las de localStorage
+    // Aseguramos que la estructura de los objetos de la constante sea la misma que la de localStorage
+    const updatedAnalyses = [...newImagesToAdd, ...storedAnalyses];
+    
+    localStorage.setItem('recentAnalyses', JSON.stringify(updatedAnalyses));
+    
+  }, []); // Se ejecuta solo una vez al cargar el componente
 
-  // Función para manejar la selección de una imagen
-  const handleImageSelect = (image) => {
-    setSelectedImage(image);
+  // 🟢 Este useEffect ahora se encarga solo de mostrar las imágenes en la interfaz de Scanner
+  useEffect(() => {
+    const storedAnalyses = JSON.parse(localStorage.getItem('recentAnalyses')) || [];
+    setDisplayImages(storedAnalyses);
+  }, []);
+
+  const handleImageSelect = (analysis) => {
+    setSelectedImage(analysis);
   };
   
-  const selectedFileName = selectedImage ? selectedImage.imgURL.split('/').pop() : null;
+  const selectedFileName = selectedImage ? (selectedImage.fileName || selectedImage.imgURL.split('/').pop()) : null;
 
-  // 🟢 Nueva función para manejar el análisis y la navegación
+  const handleUploadedImage = (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64Image = e.target.result;
+      const newAnalysis = {
+        id: uuidv4(),
+        imgURL: base64Image,
+        date: new Date().toISOString().split('T')[0],
+        fileName: file.name,
+        detectedParasites: [],
+      };
+      setSelectedImage(newAnalysis);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleAnalyze = () => {
     if (selectedImage) {
-      // Navegamos a la nueva ruta dinámica, pasando el ID y el objeto de análisis
       navigate(`/scanner-results/${selectedImage.id}`, { state: { analysis: selectedImage } });
     }
   };
@@ -41,16 +79,16 @@ function Scanner() {
               message="Formatos de archivo admitidos:" 
               typesOfFiles="JPG, PNG, TIFF" 
               selectedFileName={selectedFileName}
-              onFileSelect={(fileName) => setSelectedImage({ imgURL: fileName })}
+              onFileSelect={handleUploadedImage}
             />
             <h2 className="text-[#101816] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Imágenes recientes</h2>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4">
-              {recentImages.map((image) => (
+              {displayImages.map((analysis) => (
                 <Card 
-                  key={image.id} 
-                  imgURL={image.imgURL} 
-                  onClick={() => handleImageSelect(image)}
-                  isSelected={selectedImage && selectedImage.id === image.id}
+                  key={analysis.id} 
+                  imgURL={analysis.imgURL} 
+                  onClick={() => handleImageSelect(analysis)}
+                  isSelected={selectedImage && selectedImage.id === analysis.id}
                 />
               ))}
             </div>
@@ -58,7 +96,7 @@ function Scanner() {
               <button 
                 className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#00c795] text-[#101816] text-sm font-bold leading-normal tracking-[0.015em]"
                 onClick={handleAnalyze}
-                disabled={!selectedImage} // 🟢 Deshabilitamos el botón si no hay imagen seleccionada
+                disabled={!selectedImage}
               >
                 <span className="truncate">Analizar</span>
               </button>
