@@ -9,7 +9,7 @@ import Table from "../components/Table";
 import HorizontalBarChart from "../components/HorizontalBarChart";
 import Error from '../components/Error';
 // Constantes
-import { recentAnalyses as recentAnalysesConstant, recentImages as recentImagesConstant } from '../assets/constants'; // 🟢 Importamos ambas listas de constantes
+import { recentAnalyses as recentAnalysesConstant, recentImages as recentImagesConstant } from '../assets/constants';
 
 function ScannerResults() {
     const { analysisId } = useParams();
@@ -29,7 +29,6 @@ function ScannerResults() {
         if (index !== -1) {
             localAnalyses[index] = updatedAnalysis;
         } else {
-            // 🟢 Busca en ambas listas de constantes para evitar agregar duplicados
             const isFromConstants = recentAnalysesConstant.find(a => a.id === updatedAnalysis.id) || recentImagesConstant.find(a => a.id === updatedAnalysis.id);
             if (!isFromConstants) {
                 localAnalyses.unshift(updatedAnalysis);
@@ -39,18 +38,13 @@ function ScannerResults() {
     }, []);
 
     useEffect(() => {
-        let currentAnalysis = location.state?.analysis;
-        if (!currentAnalysis) {
-            const localAnalyses = JSON.parse(localStorage.getItem('recentAnalyses')) || [];
-            currentAnalysis = localAnalyses.find(a => a.id.toString() === analysisId);
-            if (!currentAnalysis) {
-                currentAnalysis = recentAnalysesConstant.find(a => a.id.toString() === analysisId);
-            }
-            if (!currentAnalysis) {
-                // 🟢 Busca en la nueva lista de imágenes constantes si no se encuentra en las otras
-                currentAnalysis = recentImagesConstant.find(a => a.id.toString() === analysisId);
-            }
-        }
+        const localAnalyses = JSON.parse(localStorage.getItem('recentAnalyses')) || [];
+        const combinedConstants = [...recentAnalysesConstant, ...recentImagesConstant];
+        
+        let currentAnalysis = location.state?.analysis ||
+            localAnalyses.find(a => a.id.toString() === analysisId) ||
+            combinedConstants.find(a => a.id.toString() === analysisId);
+            
         setAnalysis(currentAnalysis);
     }, [analysisId, location.state]);
 
@@ -65,8 +59,9 @@ function ScannerResults() {
         if (!analysis || !imgRef.current) return;
 
         const startAnalysis = () => {
-            // 🟢 Revisa si los parásitos ya están en el objeto de análisis
-            if (analysis.detectedParasites && analysis.detectedParasites.length > 0) {
+            // 🟢 Corregido: Ahora verificamos si detectedParasites es un array y tiene elementos.
+            if (Array.isArray(analysis.detectedParasites) && analysis.detectedParasites.length > 0) {
+                console.log('Usando datos existentes de la constante:', analysis.detectedParasites);
                 setIsLoading(false);
                 setDetectedParasites(analysis.detectedParasites);
                 
@@ -82,7 +77,8 @@ function ScannerResults() {
                     context.strokeRect(analysis.x, analysis.y, analysis.width, analysis.height);
                 }
             } else {
-                // Si no hay parásitos, ejecuta la simulación con el Web Worker
+                // Si no hay parásitos o no es un array, se ejecuta la simulación
+                console.log('Iniciando simulación de análisis...');
                 const worker = new Worker('/worker.js');
                 const canvas = canvasRef.current;
                 const context = canvas.getContext('2d');
@@ -90,7 +86,6 @@ function ScannerResults() {
                 canvas.height = imgRef.current.naturalHeight;
                 context.drawImage(imgRef.current, 0, 0);
 
-                console.log('Principal: Enviando imagen al Web Worker...');
                 worker.postMessage({
                     imageData: 'simulated image data',
                     imageWidth: canvas.width,
@@ -98,7 +93,6 @@ function ScannerResults() {
                 });
 
                 worker.onmessage = (e) => {
-                    console.log('Principal: Recibiendo resultados completos del Web Worker.');
                     const { x, y, width, height, detectedParasites: workerParasites } = e.data;
                     setIsLoading(false);
                     setDetectedParasites(workerParasites);
@@ -134,11 +128,12 @@ function ScannerResults() {
         } else {
             imgRef.current.onload = startAnalysis;
         }
-
-        imgRef.current.src = analysis.imgURL;
         
+        // 🚨 AQUÍ ESTÁ EL CAMBIO IMPORTANTE: Agrega una verificación `if (imgRef.current)`
         return () => {
-            imgRef.current.onload = null;
+            if (imgRef.current) {
+                imgRef.current.onload = null;
+            }
         };
     }, [analysis, saveAnalysisToLocalStorage]);
 

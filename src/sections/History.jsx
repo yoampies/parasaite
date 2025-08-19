@@ -21,19 +21,13 @@ function History() {
   const navigate = useNavigate(); 
 
   useEffect(() => {
-    // 1. Cargar los análisis guardados en localStorage
     const storedAnalyses = JSON.parse(localStorage.getItem('recentAnalyses')) || [];
-
-    // 2. Filtrar los análisis de ejemplo de la constante, eliminando los que ya están en el localStorage
     const filteredConstantAnalyses = recentAnalyses.filter(
       (constantAnalysis) => 
         !storedAnalyses.some((storedAnalysis) => storedAnalysis.id === constantAnalysis.id)
     );
-
-    // 🟢 CAMBIO AQUÍ: Combinar ambos arrays, colocando primero los de la constante
-    const combinedAnalyses = [...filteredConstantAnalyses, ...storedAnalyses];
     
-    setDisplayedAnalyses(combinedAnalyses);
+    setDisplayedAnalyses([...filteredConstantAnalyses, ...storedAnalyses]);
   }, []);
 
   const handleFilterSelection = (selectedOption) => {

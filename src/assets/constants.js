@@ -62,11 +62,24 @@ export const months = [
 export const feedbackStatus = ['En Progreso', 'Revisado', 'Completado'];
 
 // Scanner.jsx
+export const possibleParasites = [
+  'Giardia duodenale',
+  'Entamoeba histolytica',
+  'Cryptosporidium parvum',
+  'Cyclospora cayetanensis',
+  'Trichomonas vaginalis',
+  'Ascaris lumbricoides',
+  'Strongyloides stercoralis',
+  'Ancylostoma duodenale',
+  'Enterobius vermicularis',
+  'Toxoplasma gondii',
+];
+
 export const recentImages = [
     {
         id: 1,
         imgURL: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBhRvycVo35Tj-vhLDOOqNAnoZ5xwnivz9lA9pUiUJJRAab50T_SdTnq190ZUC_niIBpbTS5Vhcm1gSW-SwCWmZRuhauGwwjnCt6yqVVvM0kr7FO3OiU9esMqyBwHz3Ury2BfMoE4iUwbw4ZURPczL3fgesxAtAE_-CbAmHH0auvTNi3US0gsMUba-Vlgt3FIIpAyIMmIfGiHvPaJfsfAfS444nnhtszZoQ-1DwE-u7jYcaf4rKn56BkC0xOc9_QcXBpU_wBmgHXJ-b',
-        date: '2024-01-01',
+        date: '2024-01-01 03:00 PM',
         fileName: 'sample_image_1.png',
         detectedParasites: [
             { label: 'Ascaris lumbricoides', value: 95 },
@@ -76,7 +89,7 @@ export const recentImages = [
     {
         id: 2,
         imgURL: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB3Ev-z_K8S5J57mhT8QazsJdJFxGJE7J3yVEl7tgN_-iSGlHLh-eyN-yLgO0ZNe4Nys6AduknmjQCV8-9l4qoA2lzR_urdWPfmvR7cK2zAHqlRIPKcag0Ktsxz61_IRLv9DGfWHcvm3mwn-WXJBHnyYXUqLCsXXvcZhXcrgxZVAr3WJLiEtp8EPVpyIOk-T2EWLdwh9OWRORMZA_o-GUAewgKkpCWOvQICJ4jGv6_miS35EyV8bie7ObvA9yn8UovYLrF3stm7NsS0',
-        date: '2024-01-02',
+        date: '2024-01-02 01:00 AM',
         fileName: 'sample_image_2.png',
         detectedParasites: [
             { label: 'Giardia duodenale', value: 88 },
@@ -85,7 +98,7 @@ export const recentImages = [
     {
         id: 3,
         imgURL: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCKjJys1OW6VOdrxa9gTEMfN9bYLgmd1m8JUyZXZiZxJEZ3LiOanBt_s_gqoIvO6sK-KUSOpoHFmHiqBiKyaQTgeM30qQIernq97omtFXZPBwsYn1evcYQ0rnT2ymmtksZm1KxTxfwlGlRv65-fnmxGI85RhjsAFK3hf-QvLpp1e25l4L8MIoUwGoXmmXimlRZOHBPFX90J_p6_zOmdfIcz38Q1ExVrrOBEPzHC6I6eaIZnKNxU7GeuEdR30-KWQ640qubxXKLUVgT1',
-        date: '2024-01-03',
+        date: '2024-01-03 12:00 M',
         fileName: 'sample_image_3.png',
         detectedParasites: [
             { label: 'Enterobius vermicularis', value: 75 },

@@ -1,41 +1,48 @@
 // Scanner.jsx
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Card from "../components/Card";
 import ImageUploader from "../components/ImageUploader";
-import { recentImages as recentImagesConstant } from "../assets/constants";
+import { recentImages as recentImagesConstant, recentAnalyses as recentAnalysesConstant, possibleParasites as possibleParasitesConstant } from "../assets/constants";
 import { v4 as uuidv4 } from 'uuid';
+
+const generateRandomParasites = () => {
+    const parasites = [];
+    const numberOfParasites = Math.floor(Math.random() * 5) + 1;
+
+    for (let i = 0; i < numberOfParasites; i++) {
+        const randomParasite = possibleParasitesConstant[Math.floor(Math.random() * possibleParasitesConstant.length)];
+        const randomValue = Math.floor(Math.random() * 50) + 50;
+        
+        parasites.push({ label: randomParasite, value: randomValue });
+    }
+    return parasites;
+};
 
 function Scanner() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [displayImages, setDisplayImages] = useState([]);
   const navigate = useNavigate(); 
 
-  // 🟢 Este useEffect se encarga de sincronizar los datos de las constantes con localStorage
   useEffect(() => {
-    const storedAnalyses = JSON.parse(localStorage.getItem('recentAnalyses')) || [];
+    let storedAnalyses = JSON.parse(localStorage.getItem('recentAnalyses'));
     
-    // Filtramos las imágenes de la constante para evitar duplicados en localStorage
-    const newImagesToAdd = recentImagesConstant.filter(
-      (constantImage) =>
-        !storedAnalyses.some((storedAnalysis) => storedAnalysis.id === constantImage.id)
-    );
+    // 🚨 Corrected Logic: Initialize localStorage ONLY if it's empty
+    if (!storedAnalyses || storedAnalyses.length === 0) {
+      const combinedConstants = [...recentAnalysesConstant, ...recentImagesConstant];
+      // Assign a unique ID to each constant item before saving to localStorage
+      const initialAnalyses = combinedConstants.map(analysis => ({
+        ...analysis,
+        id: uuidv4(),
+      }));
+      localStorage.setItem('recentAnalyses', JSON.stringify(initialAnalyses));
+      storedAnalyses = initialAnalyses;
+    }
     
-    // Combinamos las imágenes de la constante con las de localStorage
-    // Aseguramos que la estructura de los objetos de la constante sea la misma que la de localStorage
-    const updatedAnalyses = [...newImagesToAdd, ...storedAnalyses];
-    
-    localStorage.setItem('recentAnalyses', JSON.stringify(updatedAnalyses));
-    
-  }, []); // Se ejecuta solo una vez al cargar el componente
-
-  // 🟢 Este useEffect ahora se encarga solo de mostrar las imágenes en la interfaz de Scanner
-  useEffect(() => {
-    const storedAnalyses = JSON.parse(localStorage.getItem('recentAnalyses')) || [];
     setDisplayImages(storedAnalyses);
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const handleImageSelect = (analysis) => {
     setSelectedImage(analysis);
@@ -47,12 +54,20 @@ function Scanner() {
     const reader = new FileReader();
     reader.onload = (e) => {
       const base64Image = e.target.result;
+      
+      const now = new Date();
+      const formattedDate = now.toISOString().split('T')[0];
+      const formattedTime = now.toLocaleTimeString('es-ES', { 
+        hour: '2-digit', 
+        minute: '2-digit'
+      });
+
       const newAnalysis = {
         id: uuidv4(),
         imgURL: base64Image,
-        date: new Date().toISOString().split('T')[0],
+        date: `${formattedDate} ${formattedTime}`,
         fileName: file.name,
-        detectedParasites: [],
+        detectedParasites: generateRandomParasites(),
       };
       setSelectedImage(newAnalysis);
     };

@@ -3,26 +3,37 @@ import React, { useRef } from 'react';
 function ImageUploader({ instruction, message, typesOfFiles, selectedFileName, onFileSelect }) {
   const fileInputRef = useRef(null);
 
-  const handleButtonClick = () => {
-    fileInputRef.current.click();
-  };
-
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-      onFileSelect(file); 
+      onFileSelect(file);
       console.log('Archivo seleccionado:', file);
+    }
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    if (file) {
+      onFileSelect(file);
     }
   };
 
   return (
     <div className="flex flex-col p-4">
-      <div className="flex flex-col items-center gap-6 rounded-lg border-2 border-dashed border-[#dae7e3] px-6 py-14">
+      <div 
+        className="flex flex-col items-center gap-6 rounded-lg border-2 border-dashed border-[#dae7e3] px-6 py-14"
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
         <div className="flex max-w-[480px] flex-col items-center gap-2">
           <p className="text-[#101816] text-lg font-bold leading-tight tracking-[-0.015em] max-w-[480px] text-center">{instruction}</p>
           <p className="text-[#101816] text-sm font-normal leading-normal max-w-[480px] text-center">
             {selectedFileName ? (
-              // 🟢 FIX: Added a span with overflow classes
               <span className="truncate block">
                 {selectedFileName}
               </span>
@@ -39,7 +50,7 @@ function ImageUploader({ instruction, message, typesOfFiles, selectedFileName, o
           onChange={handleFileChange}
         />
         <button
-          onClick={handleButtonClick}
+          onClick={() => fileInputRef.current.click()} // Use a direct reference to the input
           className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#f0f5f4] text-[#101816] text-sm font-bold leading-normal tracking-[0.015em]"
         >
           <span className="truncate">Subir</span>
