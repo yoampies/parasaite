@@ -35,8 +35,8 @@ function History() {
     console.log("Opción seleccionada:", selectedOption);
   };
   
-  const handleCardClick = (analysisId) => {
-      navigate(`/scanner-results/${analysisId}`);
+  const handleCardClick = (analysis) => {
+    navigate(`/scanner-results/${analysis.id}`, { state: { analysis } });
   };
 
   return (
@@ -73,7 +73,7 @@ function History() {
                 title={`Análisis del ${analysis.date}`} 
                 content={analysis.content} 
                 imgURL={analysis.imgURL}
-                onClick={() => handleCardClick(analysis.id)}
+                onClick={() => handleCardClick(analysis)}
               />
             ))}
           </div>

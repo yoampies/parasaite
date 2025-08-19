@@ -2,13 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { gsap } from 'gsap';
-// Componentes
 import Navbar from "../components/Navbar";
 import Table from "../components/Table";
 import HorizontalBarChart from "../components/HorizontalBarChart";
 import Error from '../components/Error';
-// Constantes
 import { recentAnalyses as recentAnalysesConstant, recentImages as recentImagesConstant } from '../assets/constants';
 
 function ScannerResults() {
@@ -20,7 +17,7 @@ function ScannerResults() {
     const imgRef = useRef(null);
     const [isLoading, setIsLoading] = useState(true);
     const [analysis, setAnalysis] = useState(null);
-    const [detectedParasites, setDetectedParasites] = useState([]);
+    const [analysisResults, setAnalysisResults] = useState([]);
 
     const saveAnalysisToLocalStorage = useCallback((updatedAnalysis) => {
         const localAnalyses = JSON.parse(localStorage.getItem('recentAnalyses')) || [];
@@ -49,93 +46,72 @@ function ScannerResults() {
     }, [analysisId, location.state]);
 
     const handleSendFeedback = () => {
-        const analysisWithResults = { ...analysis, detectedParasites };
+        const analysisWithResults = { ...analysis, detectedParasites: analysisResults.flatMap(r => r.detectedParasites) };
         saveAnalysisToLocalStorage(analysisWithResults);
         localStorage.setItem('currentAnalysis', JSON.stringify(analysisWithResults));
         navigate(`/feedback/${analysisId}`);
     };
 
     useEffect(() => {
-        if (!analysis || !imgRef.current) return;
+        if (!analysis || !imgRef.current || !canvasRef.current) return;
 
-        const startAnalysis = () => {
-            // 🟢 Corregido: Ahora verificamos si detectedParasites es un array y tiene elementos.
-            if (Array.isArray(analysis.detectedParasites) && analysis.detectedParasites.length > 0) {
-                console.log('Usando datos existentes de la constante:', analysis.detectedParasites);
-                setIsLoading(false);
-                setDetectedParasites(analysis.detectedParasites);
-                
-                const canvas = canvasRef.current;
-                const context = canvas.getContext('2d');
-                canvas.width = imgRef.current.naturalWidth;
-                canvas.height = imgRef.current.naturalHeight;
-                context.drawImage(imgRef.current, 0, 0);
+        const img = imgRef.current;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        const worker = new Worker('/worker.js');
 
-                if (analysis.x && analysis.y && analysis.width && analysis.height) {
-                    context.strokeStyle = '#D1495B';
-                    context.lineWidth = 4;
-                    context.strokeRect(analysis.x, analysis.y, analysis.width, analysis.height);
-                }
-            } else {
-                // Si no hay parásitos o no es un array, se ejecuta la simulación
-                console.log('Iniciando simulación de análisis...');
-                const worker = new Worker('/worker.js');
-                const canvas = canvasRef.current;
-                const context = canvas.getContext('2d');
-                canvas.width = imgRef.current.naturalWidth;
-                canvas.height = imgRef.current.naturalHeight;
-                context.drawImage(imgRef.current, 0, 0);
-
-                worker.postMessage({
-                    imageData: 'simulated image data',
-                    imageWidth: canvas.width,
-                    imageHeight: canvas.height,
+        const drawCanvas = (results) => {
+            // Dibuja la imagen original primero
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            ctx.drawImage(img, 0, 0);
+            
+            // Dibuja los recuadros delimitadores basándose en los resultados del worker
+            if (results && results.length > 0) {
+                results.forEach(result => {
+                    ctx.strokeStyle = '#D1495B'; // Rojo
+                    ctx.lineWidth = 4;
+                    ctx.strokeRect(result.x, result.y, result.width, result.height);
                 });
+            }
+            setIsLoading(false);
+        };
 
-                worker.onmessage = (e) => {
-                    const { x, y, width, height, detectedParasites: workerParasites } = e.data;
-                    setIsLoading(false);
-                    setDetectedParasites(workerParasites);
-
-                    context.strokeStyle = '#D1495B';
-                    context.lineWidth = 4;
-
-                    gsap.fromTo(
-                        { drawPercent: 0 },
-                        { drawPercent: 1 },
-                        {
-                            duration: 1.5,
-                            onUpdate: function() {
-                                context.clearRect(0, 0, canvas.width, canvas.height);
-                                context.drawImage(imgRef.current, 0, 0);
-                                const currentWidth = width * this.targets()[0].drawPercent;
-                                const currentHeight = height * this.targets()[0].drawPercent;
-                                context.strokeRect(x, y, currentWidth, currentHeight);
-                            },
-                            onComplete: () => {
-                                const updatedAnalysis = { ...analysis, detectedParasites: workerParasites, x, y, width, height };
-                                saveAnalysisToLocalStorage(updatedAnalysis);
-                            }
-                        }
-                    );
-                };
-                return () => worker.terminate();
+        const handleAnalysis = async () => {
+            try {
+                const imageBitmap = await createImageBitmap(img);
+                
+                // Envía la imagen y los datos de parásitos al worker
+                worker.postMessage({
+                    imageBitmap,
+                    imageWidth: img.naturalWidth,
+                    imageHeight: img.naturalHeight,
+                    detectedParasites: analysis.detectedParasites,
+                }, [imageBitmap]);
+            } catch (error) {
+                console.error("Error creating ImageBitmap:", error);
+                setIsLoading(false);
             }
         };
 
-        if (imgRef.current.complete) {
-            startAnalysis();
+        worker.onmessage = (e) => {
+            const { results } = e.data;
+            setAnalysisResults(results); // Actualiza el estado con los resultados de la detección
+            drawCanvas(results); // Llama a la función de dibujo con los resultados
+        };
+
+        if (img.complete) {
+            handleAnalysis();
         } else {
-            imgRef.current.onload = startAnalysis;
+            img.onload = () => handleAnalysis();
         }
-        
-        // 🚨 AQUÍ ESTÁ EL CAMBIO IMPORTANTE: Agrega una verificación `if (imgRef.current)`
+
         return () => {
-            if (imgRef.current) {
-                imgRef.current.onload = null;
-            }
+            if (img) img.onload = null;
+            worker.terminate();
         };
-    }, [analysis, saveAnalysisToLocalStorage]);
+
+    }, [analysis]);
 
     if (!analysis) {
         return (
@@ -164,6 +140,7 @@ function ScannerResults() {
                                         ref={imgRef}
                                         src={analysis.imgURL}
                                         alt="Imagen del análisis"
+                                        crossOrigin="anonymous" 
                                         style={{ display: 'none' }}
                                     />
                                 )}
@@ -177,7 +154,7 @@ function ScannerResults() {
                         </div>
                         <h3 className="text-[#101816] text-lg font-bold leading-tight tracking-[-0.015em] px-4 pb-2 pt-4">Parásitos Detectados</h3>
                         <div className="px-4 py-3 @container">
-                            <Table parasites={detectedParasites} /> 
+                            <Table parasites={analysisResults.flatMap(r => r.detectedParasites)} /> 
                         </div>
                     </div>
                     <div className="layout-content-container flex flex-col w-[360px]">
@@ -186,7 +163,7 @@ function ScannerResults() {
                             <div className="flex min-w-72 flex-1 flex-col gap-2 rounded-lg border border-[#dae7e3] p-6">
                                 <p className="text-[#101816] text-base font-medium leading-normal">Distribución de Parásitos</p>
                                 <div className="h-full">
-                                    <HorizontalBarChart data={detectedParasites} />
+                                    <HorizontalBarChart data={analysisResults.flatMap(r => r.detectedParasites)} />
                                 </div>
                             </div>
                         </div>

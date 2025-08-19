@@ -1,14 +1,13 @@
 // Worker.js
-self.onmessage = function(e) {
-  console.log('Worker: Mensaje recibido. Verificando resultados...');
+self.onmessage = async function(e) {
+  console.log('Worker: Mensaje recibido. Simulando análisis y dibujo...');
   
-  // Destructuramos los datos para obtener tanto la información de la imagen como los parásitos ya detectados.
-  const { imageWidth, imageHeight, detectedParasites } = e.data;
+  const { imageBitmap, imageWidth, imageHeight, detectedParasites } = e.data;
 
   setTimeout(() => {
-    // 🚨 Nueva lógica: Si hay parásitos, genera un cuadro delimitador para cada uno
+    // Verificar si hay parásitos detectados
     if (detectedParasites && detectedParasites.length > 0) {
-      console.log('Worker: Se encontraron parásitos. Generando cuadros delimitadores.');
+      console.log('Worker: Se encontraron parásitos. Generando y dibujando cuadros delimitadores.');
 
       const minSquareWidth = 100;
       const maxSquareWidth = 200;
@@ -18,8 +17,8 @@ self.onmessage = function(e) {
       function getRandomNumber(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
       }
-
-      // 🟢 Mapeamos los parásitos existentes para crear un array con la estructura completa de detección
+      
+      // Mapear los parásitos existentes para crear un array con la estructura completa de detección
       const analysisResults = detectedParasites.map(parasite => {
         const randomWidth = getRandomNumber(minSquareWidth, maxSquareWidth);
         const randomHeight = getRandomNumber(minSquareHeight, maxSquareHeight);
@@ -36,10 +35,15 @@ self.onmessage = function(e) {
         };
       });
 
-      self.postMessage(analysisResults);
+      console.log('Worker: Análisis y dibujo completos. Devolviendo resultados al hilo principal.');
+      self.postMessage({
+        results: analysisResults,
+      });
     } else {
-      console.log('Worker: No se encontraron parásitos. Devolviendo un array vacío.');
-      self.postMessage([]); // Devuelve un array vacío para indicar que no hay detecciones
+      console.log('Worker: No se encontraron parásitos. Devolviendo array vacío.');
+      self.postMessage({
+        results: [],
+      });
     }
   }, 3000);
 };
