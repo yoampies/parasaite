@@ -51,7 +51,7 @@ function SectionRendering({ sections, parasiteName }) {
             ) : (
               // De lo contrario, si hay una imgUrl, muestra la imagen estática
               section.imgUrl && (
-                <div className="p-4">
+                /*<div className="p-4">
                   <div
                     className="relative flex items-center justify-center bg-[#101816] bg-cover bg-center aspect-video rounded-lg p-4"
                     style={{ backgroundImage: `url("${section.imgUrl}")` }}
@@ -64,6 +64,17 @@ function SectionRendering({ sections, parasiteName }) {
                       </div>
                     </button>
                   </div>
+                </div>*/
+
+                <div className="p-4">
+                  <video
+                    className="aspect-video rounded-lg w-full h-full"
+                    src="https://www.youtube.com/watch?v=o9Iny7sLM2o"
+                    controls
+                    poster="URL_DE_IMAGEN_DE_PREVISUALIZACION.jpg"
+                  >
+                    Tu navegador no soporta la etiqueta de video.
+                  </video>
                 </div>
               )
             )}
