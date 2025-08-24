@@ -1,65 +1,122 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { months } from '../assets/constants';
 
+// --- Funciones de Ayuda ---
+// Mover estas funciones fuera del componente evita que se vuelvan a crear en cada renderizado.
+
+/**
+ * @description Obtiene el número de días en un mes específico.
+ * @param {number} year - El año.
+ * @param {number} month - El mes (0-11).
+ * @returns {number} El número de días.
+ */
+const getDaysInMonth = (year, month) => {
+  return new Date(year, month + 1, 0).getDate();
+};
+
+/**
+ * @description Calcula el día de la semana de inicio de un mes.
+ * @param {number} year - El año.
+ * @param {number} month - El mes (0-11).
+ * @returns {number} El día de la semana de inicio (1=Lunes, 7=Domingo).
+ */
+const getStartingDay = (year, month) => {
+  const day = new Date(year, month, 1).getDay();
+  return day === 0 ? 7 : day;
+};
+
+// --- Componente principal ---
+
+/**
+ * @description Componente de filtro de calendario para seleccionar un rango de fechas.
+ * @param {object} props - Propiedades del componente.
+ * @param {string} props.title - El título del calendario.
+ * @param {function} props.onDateChange - Callback que se ejecuta con el rango de fechas seleccionado.
+ */
 function CalendarFilter({ title, onDateChange }) {
-  const today = new Date();
-  const [activeDate, setActiveDate] = useState(today);
+  const [activeDate, setActiveDate] = useState(new Date());
   const [selectedRange, setSelectedRange] = useState({
     start: null,
     end: null,
   });
 
-  const getDaysInMonth = (year, month) => {
-    return new Date(year, month + 1, 0).getDate();
-  };
-
-  const getStartingDay = (year, month) => {
-    const day = new Date(year, month, 1).getDay();
-    return day === 0 ? 7 : day;
-  };
-
   const currentMonth = activeDate.getMonth();
   const currentYear = activeDate.getFullYear();
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const startingDay = getStartingDay(currentYear, currentMonth);
+
+  // Memoiza la generación del array de días para optimizar el rendimiento.
   const days = useMemo(() => Array.from({ length: daysInMonth }, (_, i) => i + 1), [daysInMonth]);
 
+  // --- Lógica de Manejo de Eventos y Estado ---
+
+  /**
+   * @description Maneja el clic en un día para establecer un rango de fechas.
+   * @param {number} day - El día del mes clickeado.
+   */
   const handleDayClick = (day) => {
     const dayDate = new Date(currentYear, currentMonth, day);
+    dayDate.setHours(0, 0, 0, 0);
 
-    if (!selectedRange.start || (selectedRange.start && selectedRange.end)) {
+    const { start, end } = selectedRange;
+
+    // Lógica para alternar la selección de rango.
+    if (!start || (start && end)) {
       setSelectedRange({ start: dayDate, end: null });
-    } else if (dayDate.getTime() < selectedRange.start.getTime()) {
-      setSelectedRange({ start: dayDate, end: selectedRange.start });
+    } else if (dayDate.getTime() < start.getTime()) {
+      setSelectedRange({ start: dayDate, end: start });
     } else {
       setSelectedRange({ ...selectedRange, end: dayDate });
     }
   };
 
+  /**
+   * @description Cambia el mes visualizado en el calendario.
+   * @param {number} direction - -1 para mes anterior, 1 para mes siguiente.
+   */
   const handleMonthChange = (direction) => {
     const newDate = new Date(activeDate);
     newDate.setMonth(activeDate.getMonth() + direction);
     setActiveDate(newDate);
   };
 
-  const handleOnDateChange = (range) => {
-    if (onDateChange) {
-      onDateChange(range);
-    }
-  };
-
-  React.useEffect(() => {
+  // Se activa el callback cuando el rango de fechas está completo.
+  useEffect(() => {
     if (selectedRange.start && selectedRange.end) {
-      handleOnDateChange(selectedRange);
+      if (typeof onDateChange === 'function') {
+        onDateChange(selectedRange);
+      }
     }
-  }, [selectedRange]);
+  }, [selectedRange, onDateChange]);
 
-  const isBetweenRange = (dayDate) => {
-    if (!selectedRange.start || !selectedRange.end) {
-      return false;
-    }
-    const sortedRange = [selectedRange.start, selectedRange.end].sort((a, b) => a.getTime() - b.getTime());
-    return dayDate > sortedRange[0] && dayDate < sortedRange[1];
+  // --- Lógica de Estilos Condicionales ---
+
+  /**
+   * @description Genera las clases CSS para un día específico basándose en el estado de selección.
+   * @param {number} day - El día del mes.
+   * @returns {string} Una cadena de clases CSS de Tailwind.
+   */
+  const getDayClassNames = (day) => {
+    const dayDate = new Date(currentYear, currentMonth, day);
+    dayDate.setHours(0, 0, 0, 0);
+
+    const { start, end } = selectedRange;
+    const hasCompleteRange = start && end;
+
+    // ** Corrección del error: ** Se comprueba si el rango está completo antes de intentar ordenar.
+    const sortedRange = hasCompleteRange ? [start, end].sort((a, b) => a.getTime() - b.getTime()) : [];
+
+    const isStart = start && dayDate.getTime() === start.getTime();
+    const isEnd = end && dayDate.getTime() === end.getTime();
+    const isInRange = hasCompleteRange && dayDate > sortedRange[0] && dayDate < sortedRange[1];
+
+    const baseClasses = 'h-12 w-full text-[#101816] text-sm font-medium leading-normal';
+    const bgClasses = isInRange || isStart || isEnd ? 'bg-[#f0f5f4]' : '';
+    const roundedClasses = isStart ? 'rounded-l-full' : (isEnd ? 'rounded-r-full' : '');
+    const circleClasses = isStart || isEnd ? 'bg-[#00c795] text-white' : '';
+
+    return `${baseClasses} ${bgClasses} ${roundedClasses} ${circleClasses}`;
   };
 
   return (
@@ -92,34 +149,34 @@ function CalendarFilter({ title, onDateChange }) {
             {Array(startingDay - 1).fill(null).map((_, index) => (
               <div key={`empty-${index}`} className="h-12 w-full" />
             ))}
-            {days.map((day) => {
-              const dayDate = new Date(currentYear, currentMonth, day);
-              const isStart = selectedRange.start && dayDate.getTime() === selectedRange.start.getTime();
-              const isEnd = selectedRange.end && dayDate.getTime() === selectedRange.end.getTime();
-              const isInRange = isBetweenRange(dayDate);
-
-              const hasGrayBackground = selectedRange.start && selectedRange.end && (isStart || isEnd || isInRange);
-
-              return (
-                <button
-                  key={day}
-                  onClick={() => handleDayClick(day)}
-                  className={`h-12 w-full text-[#101816] text-sm font-medium leading-normal 
-                    ${hasGrayBackground ? 'bg-[#f0f5f4]' : ''} 
-                    ${isStart ? 'rounded-l-full' : ''} 
-                    ${isEnd ? 'rounded-r-full' : ''}`}
-                >
-                  <div className={`flex size-full items-center justify-center rounded-full ${isStart || isEnd ? 'bg-[#00c795]' : ''}`}>
-                    {day}
-                  </div>
-                </button>
-              );
-            })}
+            {days.map((day) => (
+              <button
+                key={day}
+                onClick={() => handleDayClick(day)}
+                className={getDayClassNames(day)}
+              >
+                <div className={`flex size-full items-center justify-center rounded-full 
+                  ${(selectedRange.start && new Date(currentYear, currentMonth, day).setHours(0,0,0,0) === selectedRange.start.getTime() || selectedRange.end && new Date(currentYear, currentMonth, day).setHours(0,0,0,0) === selectedRange.end.getTime()) ? 'bg-[#00c795] text-white' : ''}`}>
+                  {day}
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       </div>
     </>
   );
 }
+
+// Validación de Propiedades
+CalendarFilter.propTypes = {
+  title: PropTypes.string.isRequired,
+  onDateChange: PropTypes.func,
+};
+
+// Propiedades por defecto para mayor robustez
+CalendarFilter.defaultProps = {
+  onDateChange: () => {},
+};
 
 export default CalendarFilter;

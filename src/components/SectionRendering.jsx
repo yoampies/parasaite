@@ -51,25 +51,10 @@ function SectionRendering({ sections, parasiteName }) {
             ) : (
               // De lo contrario, si hay una imgUrl, muestra la imagen estática
               section.imgUrl && (
-                /*<div className="p-4">
-                  <div
-                    className="relative flex items-center justify-center bg-[#101816] bg-cover bg-center aspect-video rounded-lg p-4"
-                    style={{ backgroundImage: `url("${section.imgUrl}")` }}
-                  >
-                    <button className="flex shrink-0 items-center justify-center rounded-full size-16 bg-black/40 text-white">
-                      <div className="text-inherit" data-icon="Play" data-size="24px" data-weight="fill">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
-                          <path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z"></path>
-                        </svg>
-                      </div>
-                    </button>
-                  </div>
-                </div>*/
-
                 <div className="p-4">
                   <video
                     className="aspect-video rounded-lg w-full h-full"
-                    src="https://www.youtube.com/watch?v=o9Iny7sLM2o"
+                    src= {section.imgUrl}
                     controls
                     poster="URL_DE_IMAGEN_DE_PREVISUALIZACION.jpg"
                   >

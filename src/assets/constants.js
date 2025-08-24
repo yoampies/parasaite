@@ -18,6 +18,34 @@ import enterobius from "/images/parasites-enterobius.jpg"
 import trichuris from "/images/parasites-trichuris.jpg"
 import necator from "/images/parasites-necator.jpg"
 import giardia from "/images/parasites-giardia.jpg"
+//LifeCycle
+import cdvAscarisEgg from "/images/cdv-ascaris-egg.jpg";
+import cdvAscarisIntestine from "/images/cdv-ascaris-intestine.png";
+import cdvAscarisLarvae from "/images/cdv-ascaris-larvae.jpg";
+import cdvAscarisLung from "/images/cdv-ascaris-lung.jpg";
+import cdvEnterobiusAnus from "/images/cdv-enterobius-anus.png";
+import cdvEnterobiusColon from "/images/cdv-enterobius-colon.jpg";
+import cdvEnterobiusEgg from "/images/cdv-enterobius-egg.jpg";
+import cdvEnterobiusLarvae from "/images/cdv-enterobius-larvae.jpg";
+import cdvGiardiaColonization from "/images/cdv-giardia-colonization.jpg";
+import cdvGiardiaCyst from "/images/cdv-giardia-cyst.jpg";
+import cdvGiardiaCyst2 from "/images/cdv-giardia-cyst2.jpg";
+import cdvGiardiaElimination from "/images/cdv-giardia-elimination.png";
+import cdvGiardiaTrophozoite from "/images/cdv-giardia-trophozoite.jpg";
+import cdvNecatorAdult from "/images/cdv-necator-adult.jpg";
+import cdvNecatorEgg from "/images/cdv-necator-egg.jpg";
+import cdvNecatorFLarvae from "/images/cdv-necator-f-larvae.jpg";
+import cdvNecatorRLarvae from "/images/cdv-necator-r-larvae.jpg";
+import cdvTrichurisIEgg from "/images/cdv-trichuris-i-egg.jpg";
+import cdvTrichurisIntestine from "/images/cdv-trichuris-intestine.jpg";
+import cdvTrichurisLarvae from "/images/cdv-trichuris-larvae.jpg";
+import cdvTrichurisMEgg from "/images/cdv-trichuris-m-egg.jpg";
+
+//SectionRendering.jsx
+import ascaris_video from "/videos/Ascaridiasis.mp4"
+import enterobius_trichuris_video from "/videos/Enterobiasis-Trichuriasis.mp4"
+import necator_video from "/videos/Anquilostomidiasis.mp4"
+import giardia_video from "/videos/Giardiasis.mp4"
 
 // Helper function to generate content from detected parasites
 const generateContent = (detectedParasites) => {
@@ -45,10 +73,10 @@ export const recentAnalyses = [
     {
         id: 2,
         date: '2024-01-14 02:45 PM',
-        content: 'Detectado: Giardia duodenale (2), Confianza Promedio: 88%',
+        content: 'Detectado: Giardia duodenalis (2), Confianza Promedio: 88%',
         imgURL: analysis2,
         detectedParasites: [
-            { label: 'Giardia duodenale', value: 88 },
+            { label: 'Giardia duodenalis', value: 88 },
         ],
     },
     {
@@ -83,7 +111,7 @@ export const parasiteTypes = [
   'Enterobius vermicularis',
   'Trichuris trichiura',
   'Necator americanus',
-  'Giardia duodenale',
+  'Giardia duodenalis',
 ];
 
 export const months = [
@@ -95,7 +123,7 @@ export const feedbackStatus = ['En Progreso', 'Revisado', 'Completado'];
 
 // Scanner.jsx
 export const possibleParasites = [
-  'Giardia duodenale',
+  'Giardia duodenalis',
   'Entamoeba histolytica',
   'Cryptosporidium parvum',
   'Cyclospora cayetanensis',
@@ -129,11 +157,11 @@ export const recentImages = [
         date: '2024-01-02 01:00 AM',
         fileName: 'sample_image_2.png',
         detectedParasites: [
-            { label: 'Giardia duodenale', value: 88 },
+            { label: 'Giardia duodenalis', value: 88 },
         ],
         // ⭐ ADDED THIS LINE ⭐
         content: generateContent([
-            { label: 'Giardia duodenale', value: 88 },
+            { label: 'Giardia duodenalis', value: 88 },
         ]),
     },
     {
@@ -182,9 +210,9 @@ export const parasites = [
   },
   {
     id: 5,
-    name: 'Giardia duodenale',
+    name: 'Giardia duodenalis',
     description:
-      'Giardia duodenale, también conocida como Giardia lamblia, es un protozoo flagelado que causa la giardiasis, una enfermedad diarreica común.',
+      'Giardia duodenalis, también conocida como Giardia lamblia, es un protozoo flagelado que causa la giardiasis, una enfermedad diarreica común.',
     imgURL: giardia,
   },
 ];
@@ -200,7 +228,7 @@ export const parasiteData = {
           {
             title: 'Descripción general',
             text: 'Ascaris lumbricoides es un parásito nematodo (gusano redondo) que causa la ascariasis. Es la infección por helmintos más común a nivel mundial, especialmente en áreas con saneamiento deficiente. El parásito se transmite a través de la ingestión de huevos de Ascaris presentes en el suelo o alimentos contaminados. Su ciclo de vida es complejo, involucrando una migración por los pulmones antes de madurar en el intestino.',
-            imgUrl: 'https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=video&cd=&cad=rja&uact=8&ved=2ahUKEwjq5diFk6CPAxUfVTABHZyLJ5UQtwJ6BAgZEAI&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Do9Iny7sLM2o&usg=AOvVaw1uU-nII32NzE0w7ULyCBYn&opi=89978449',
+            imgUrl: ascaris_video,
           },
           {
             title: 'Importancia Clínica',
@@ -235,14 +263,14 @@ export const parasiteData = {
           {
             title: 'Etapas del Ciclo de Vida',
             stages: [
-              { title: 'Huevos', description: 'Ingeridos por el huésped, eclosionan en el intestino', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBvu9BNeEJX10kEj2Sp6ILTpNA8Ub8pVI8zHuuCQyn87t_fFHCi8mL2pCbTXGy1DyVah-saE7KZ_u0cf9DeUvqR4mSyDwO8k5MP3bYpvFxxYsR-eTbHyjep1jOdsuOSdh0Y54sAYSAikSnReMrV51gKZAeRvd-GdFobBwGJdYtt1-HP6RCrFQ2qjY5QV-jSeVVuBeFzKa3bsIvNwpG38MOIBcw6fFsvje0DTirRnG2j940zZE0SQUd06acBE4zOrBkQo0mNYfX7Vzjv9' },
-              { title: 'Larvas', description: 'Migran del intestino al torrente sanguíneo, pasando por hígado y pulmones', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG0' },
+              { title: 'Huevos', description: 'Ingeridos por el huésped, eclosionan en el intestino', imgUrl: cdvAscarisEgg },
+              { title: 'Larvas', description: 'Migran del intestino al torrente sanguíneo, pasando por hígado y pulmones', imgUrl: cdvAscarisLarvae },
               {
                 title: 'Tracto respiratorio',
                 description: 'Las larvas son tosidas y tragadas, volviendo al intestino delgado',
-                imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG1',
+                imgUrl: cdvAscarisLung,
               },
-              { title: 'Adultos', description: 'Maduran en el intestino delgado, se aparean y ponen huevos', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG2' },
+              { title: 'Adultos', description: 'Maduran en el intestino delgado, se aparean y ponen huevos', imgUrl: cdvAscarisIntestine },
             ],
           },
         ],
@@ -258,7 +286,7 @@ export const parasiteData = {
           {
             title: 'Descripción general',
             text: 'Enterobius vermicularis, conocido como oxiuro, es un nematodo que causa la enterobiasis. Es una de las infecciones por parásitos más comunes en los niños en todo el mundo. La transmisión es fecal-oral, a través de la ingesta de huevos, y a menudo por autoinfección o infección entre miembros de la misma familia.',
-            imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG3',
+            imgUrl: enterobius_trichuris_video,
           },
           {
             title: 'Importancia Clínica',
@@ -293,10 +321,10 @@ export const parasiteData = {
           {
             title: 'Etapas del Ciclo de Vida',
             stages: [
-              { title: 'Huevos', description: 'Ingeridos, eclosionan en el intestino delgado', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG6' },
-              { title: 'Larvas', description: 'Migran al intestino grueso y maduran', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG7' },
-              { title: 'Adultos', description: 'Viven en el colon; hembras grávidas migran a la región perianal', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG8' },
-              { title: 'Oviposición', description: 'Las hembras ponen huevos en la piel perianal, causando picazón', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG9' },
+              { title: 'Huevos', description: 'Ingeridos, eclosionan en el intestino delgado', imgUrl: cdvEnterobiusEgg },
+              { title: 'Larvas', description: 'Migran al intestino grueso y maduran', imgUrl: cdvEnterobiusLarvae },
+              { title: 'Adultos', description: 'Viven en el colon; hembras grávidas migran a la región perianal', imgUrl: cdvEnterobiusColon },
+              { title: 'Oviposición', description: 'Las hembras ponen huevos en la piel perianal, causando picazón', imgUrl: cdvEnterobiusAnus },
             ],
           },
         ],
@@ -312,7 +340,7 @@ export const parasiteData = {
           {
             title: 'Descripción general',
             text: 'Trichuris trichiura, o gusano látigo, es un parásito nematodo que causa la tricuriasis. Es un geohelminto, lo que significa que sus huevos se desarrollan en el suelo antes de volverse infecciosos. Las infecciones son más comunes en áreas tropicales y subtropicales con saneamiento deficiente.',
-            imgUrl: 'https://lh3.googleusercontent.com/-l_CawD1EBeg/AAAAAAAAAAI/AAAAAAAAJxI/QbLdxKBUDjA/s0-c-k-no-ns/photo.jpg0',
+            imgUrl: enterobius_trichuris_video,
           },
           {
             title: 'Importancia Clínica',
@@ -347,17 +375,17 @@ export const parasiteData = {
           {
             title: 'Etapas del Ciclo de Vida',
             stages: [
-              { title: 'Huevos inmaduros', description: 'Eliminados en las heces, maduran en el suelo', imgUrl: 'https://lh3.googleusercontent.com/-l_CawD1EBeg/AAAAAAAAAAI/AAAAAAAAJxI/QbLdxKBUDjA/s0-c-k-no-ns/photo.jpg3' },
+              { title: 'Huevos inmaduros', description: 'Eliminados en las heces, maduran en el suelo', imgUrl: cdvTrichurisIEgg },
               {
                 title: 'Huevos embrionados',
                 description: 'Se vuelven infecciosos después de 15-30 días en el suelo. Son ingeridos',
-                imgUrl: 'https://lh3.googleusercontent.com/-l_CawD1EBeg/AAAAAAAAAAI/AAAAAAAAJxI/QbLdxKBUDjA/s0-c-k-no-ns/photo.jpg4',
+                imgUrl: cdvTrichurisMEgg,
               },
-              { title: 'Larvas', description: 'Eclosionan en el intestino delgado y migran al ciego', imgUrl: 'https://lh3.googleusercontent.com/-l_CawD1EBeg/AAAAAAAAAAI/AAAAAAAAJxI/QbLdxKBUDjA/s0-c-k-no-ns/photo.jpg5' },
+              { title: 'Larvas', description: 'Eclosionan en el intestino delgado y migran al ciego', imgUrl: cdvTrichurisLarvae },
               {
                 title: 'Adultos',
                 description: 'Se adhieren a la pared del intestino grueso y producen huevos',
-                imgUrl: 'https://lh3.googleusercontent.com/-l_CawD1EBeg/AAAAAAAAAAI/AAAAAAAAJxI/QbLdxKBUDjA/s0-c-k-no-ns/photo.jpg6',
+                imgUrl: cdvTrichurisIntestine,
               },
             ],
           },
@@ -374,7 +402,7 @@ export const parasiteData = {
           {
             title: 'Descripción general',
             text: 'Necator americanus es un nematodo parásito conocido como gusano gancho. Causa la uncinariasis, una de las principales causas de anemia en regiones tropicales. La infección ocurre cuando las larvas en el suelo penetran la piel del huésped humano.',
-            imgUrl: 'https://lh3.googleusercontent.com/-l_CawD1EBeg/AAAAAAAAAAI/AAAAAAAAJxI/QbLdxKBUDjA/s0-c-k-no-ns/photo.jpg7',
+            imgUrl: necator_video,
           },
           {
             title: 'Importancia Clínica',
@@ -409,17 +437,17 @@ export const parasiteData = {
           {
             title: 'Etapas del Ciclo de Vida',
             stages: [
-              { title: 'Huevos', description: 'Eliminados en las heces, eclosionan en el suelo', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG20' },
-              { title: 'Larvas Rhabditiformes', description: 'Etapa de alimentación en el suelo', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG21' },
+              { title: 'Huevos', description: 'Eliminados en las heces, eclosionan en el suelo', imgUrl: cdvNecatorEgg },
+              { title: 'Larvas Rhabditiformes', description: 'Etapa de alimentación en el suelo', imgUrl: cdvNecatorRLarvae },
               {
                 title: 'Larvas Filariformes',
                 description: 'Infecciosas, penetran la piel y viajan a los pulmones',
-                imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG22',
+                imgUrl: cdvNecatorFLarvae,
               },
               {
                 title: 'Adultos',
                 description: 'Son deglutidos, maduran en el intestino delgado, se adhieren y se alimentan',
-                imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG23',
+                imgUrl: cdvNecatorAdult,
               },
             ],
           },
@@ -427,16 +455,16 @@ export const parasiteData = {
       },
     },
   },
-  'giardia-duodenale': {
-    title: 'Giardia duodenale',
+  'giardia-duodenalis': {
+    title: 'Giardia duodenalis',
     subtitle: 'Protozoo flagelado',
     tabs: {
       overview: {
         sections: [
           {
             title: 'Descripción general',
-            text: 'Giardia duodenale, también conocida como Giardia lamblia, es un protozoo flagelado que causa la giardiasis. Es una de las causas más comunes de enfermedades diarreicas a nivel mundial. La infección se adquiere a través de la ingestión de quistes resistentes que se encuentran en el agua o alimentos contaminados.',
-            imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG14',
+            text: 'Giardia duodenalis, también conocida como Giardia lamblia, es un protozoo flagelado que causa la giardiasis. Es una de las causas más comunes de enfermedades diarreicas a nivel mundial. La infección se adquiere a través de la ingestión de quistes resistentes que se encuentran en el agua o alimentos contaminados.',
+            imgUrl: giardia_video,
           },
           {
             title: 'Importancia Clínica',
@@ -448,7 +476,7 @@ export const parasiteData = {
         sections: [
           {
             title: 'Morfología',
-            text: 'Giardia duodenale existe en dos formas morfológicas: el quiste y el trofozoíto. El trofozoíto es la forma activa y patógena, mientras que el quiste es la forma infecciosa y resistente en el ambiente.',
+            text: 'Giardia duodenalis existe en dos formas morfológicas: el quiste y el trofozoíto. El trofozoíto es la forma activa y patógena, mientras que el quiste es la forma infecciosa y resistente en el ambiente.',
           },
           {
             title: 'Morfología del Quiste',
@@ -466,7 +494,7 @@ export const parasiteData = {
         sections: [
           {
             title: 'Ciclo de Vida',
-            text: 'El ciclo de vida de Giardia duodenale es simple y se completa en un solo huésped. Implica la alternancia entre la forma de quiste (infecciosa) y la de trofozoíto (activa).',
+            text: 'El ciclo de vida de Giardia duodenalis es simple y se completa en un solo huésped. Implica la alternancia entre la forma de quiste (infecciosa) y la de trofozoíto (activa).',
           },
           {
             title: 'Etapas del Ciclo de Vida',
@@ -474,27 +502,27 @@ export const parasiteData = {
               {
                 title: 'Ingestión',
                 description: 'El huésped ingiere quistes de Giardia en agua o alimentos contaminados',
-                imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG17',
+                imgUrl: cdvGiardiaCyst,
               },
               {
                 title: 'Exquistación',
                 description: 'En el intestino delgado, el quiste se transforma en trofozoíto',
-                imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG18',
+                imgUrl: cdvGiardiaTrophozoite,
               },
               {
                 title: 'Colonización',
                 description: 'Los trofozoítos se adhieren al revestimiento intestinal para alimentarse y reproducirse',
-                imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCigkBSx9w3rGJCcdrk3AZVzznMNXiEmgfz2aFMqSWUAmBO5HcNn1MqTOo9ygLqPC82cGGGALwatY0gvhEHDUJAnCIL3ZUKCINvaUShKHNT2_CglCfxVYdneS1iXp1ScDwjQeX0xbXZ4BDuiY5fSJS8zVOB3_G7DFMciGRKmsZUltGZktkP_pmi_LDCmfH2IVZkIeLPmSsk4679g4yquK5rSH9R7UQOJaDPTloiQ61b3DlfQa1n27egFP1Nftzd6uvt0QOWOu2wjySG19',
+                imgUrl: cdvGiardiaColonization,
               },
               {
                 title: 'Enquistamiento',
                 description: 'En el colon, los trofozoítos se transforman nuevamente en quistes',
-                imgUrl: 'https://lh3.googleusercontent.com/\n...\nI0',
+                imgUrl: cdvGiardiaElimination,
               },
               {
                 title: 'Eliminación',
                 description: 'Los quistes son eliminados en las heces, listos para infectar a un nuevo huésped',
-                imgUrl: 'https://lh3.googleusercontent.com/\n...\nI1',
+                imgUrl: cdvGiardiaElimination,
               },
             ],
           },
