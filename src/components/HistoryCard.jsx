@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 
 /**
- * @description Componente de tarjeta de registro en la sección de historial.
+ * @description Componente de tarjeta de registro en la sección de historial
  * Muestra un título, contenido, una imagen y es clickeable. Es un componente
  * de presentación puramente funcional y reutilizable.
  *

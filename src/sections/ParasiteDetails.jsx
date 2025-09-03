@@ -11,7 +11,7 @@ import SectionRendering from '../components/SectionRendering';
 import { parasites, parasiteData } from '../assets/constants';
 
 /**
- * @description Componente de la página de detalles de un parásito.
+ * @description Componente de la página de detalles de un parásito
  * Muestra información detallada sobre un parásito específico, incluyendo
  * diferentes secciones como generalidades, morfología y ciclo de vida.
  */

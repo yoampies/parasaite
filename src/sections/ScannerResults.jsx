@@ -12,7 +12,7 @@ import Error from '../components/Error';
 import { recentAnalyses as recentAnalysesConstant, recentImages as recentImagesConstant } from '../assets/constants';
 
 /**
- * @description Componente para mostrar los resultados de un análisis de parásitos.
+ * @description Componente para mostrar los resultados de un análisis de parásitos
  * Dibuja recuadros delimitadores en una imagen y muestra los resultados.
  */
 function ScannerResults() {

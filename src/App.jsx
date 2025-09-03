@@ -21,7 +21,6 @@ function App() {
         <Route path="/history" element={<History />} />
         <Route path="/library" element={<Library />} />
         <Route path="/library/:parasiteName" element={<ParasiteDetails />} />
-        <Route path="/settings" element={<Settings />} />
       </Routes>
     </BrowserRouter>
   );

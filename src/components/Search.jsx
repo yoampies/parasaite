@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 
 /**
- * @description Un componente de entrada de búsqueda con un ícono.
+ * @description Un componente de entrada de búsqueda con un ícono
  * Este componente es un "input controlado" que gestiona su propio estado
  * de valor y permite que un componente padre reciba el valor de la búsqueda.
  *

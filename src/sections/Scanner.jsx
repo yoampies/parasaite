@@ -16,7 +16,7 @@ import {
 } from "../assets/constants";
 
 /**
- * @description Generates a random set of parasites with a confidence level.
+ * @description Generates a random set of parasites with a confidence level
  * @returns {Array<Object>} An array of parasite objects.
  */
 const generateRandomParasites = () => {

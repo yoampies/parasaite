@@ -18,7 +18,7 @@ const epidemiologicalCards = [
 
 /**
  * @description Página principal del panel de control. Muestra un resumen de datos semanales
- * con estadísticas clave y gráficos de parásitos y epidemiología.
+ * con estadísticas clave y gráficos de parásitos y epidemiología
  */
 const Home = () => {
   const [data, setData] = useState(null);

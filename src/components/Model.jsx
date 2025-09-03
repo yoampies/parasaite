@@ -4,7 +4,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 /**
- * @description Un componente auxiliar para cargar dinámicamente cualquier modelo GLTF.
+ * @description Un componente auxiliar para cargar dinámicamente cualquier modelo GLTF
  * @param {object} props - Propiedades del componente.
  * @param {string} props.modelPath - La ruta al archivo de modelo 3D (.gltf o .glb).
  * @param {Array<number>} props.rotation - La rotación del modelo en el espacio 3D, en radianes [x, y, z].

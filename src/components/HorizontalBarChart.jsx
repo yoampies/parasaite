@@ -6,7 +6,7 @@ import { useResizeDetector } from 'react-resize-detector';
 import PropTypes from 'prop-types';
 
 /**
- * @description Componente de gráfico de barras horizontales interactivo y responsive.
+ * @description Componente de gráfico de barras horizontales interactivo y responsive
  * Utiliza D3.js para el renderizado de datos y `useResizeDetector` para
  * ajustarse automáticamente al tamaño de su contenedor.
  * @param {object[]} data - Los datos para el gráfico, un array de objetos

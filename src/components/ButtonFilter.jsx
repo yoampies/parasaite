@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 
-// Asume que este archivo de constantes existe y exporta un array de strings.
+// Asume que este archivo de constantes existe y exporta un array de strings
 // Por ejemplo: `export const feedbackStatus = ['Abierto', 'Cerrado', 'Pendiente'];`
 import { feedbackStatus } from '../assets/constants';
 

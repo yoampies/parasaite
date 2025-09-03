@@ -16,7 +16,7 @@ import { recentAnalyses, parasiteTypes } from "../assets/constants";
 import 'rc-slider/assets/index.css';
 
 /**
- * @description Array of filter components and their props for dynamic rendering.
+ * @description Array of filter components and their props for dynamic rendering
  * This simplifies the JSX and makes the component more scalable.
  */
 const filters = [

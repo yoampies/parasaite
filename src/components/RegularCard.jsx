@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 
 /**
  * @description Componente de tarjeta reutilizable diseñado para mostrar información de parásitos
- * con un enlace dinámico a sus detalles. Muestra un título, un breve contenido de texto y una imagen.
+ * con un enlace dinámico a sus detalles. Muestra un título, un breve contenido de texto y una imagen
  *
  * @param {object} props - Propiedades del componente.
  * @param {string} props.title - El título del parásito. Se usa para generar la URL.

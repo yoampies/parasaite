@@ -5,7 +5,7 @@ import Navbar from "./Navbar";
 
 /**
  * @description Componente de página de error genérica y reutilizable. Muestra un título, un mensaje
- * y un enlace personalizable para la navegación, manteniendo la consistencia del layout.
+ * y un enlace personalizable para la navegación, manteniendo la consistencia del layout
  *
  * @param {object} props - Propiedades del componente.
  * @param {string} props.title - Título del error.

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 /**
  * @description Componente de tarjeta para la sección del escáner. Muestra una imagen y
- * maneja un estado de selección visual para indicar si ha sido clickeada.
+ * maneja un estado de selección visual para indicar si ha sido clickeada
  *
  * @param {object} props - Propiedades del componente.
  * @param {string} props.imgURL - La URL de la imagen a mostrar en la tarjeta.

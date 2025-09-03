@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import PropTypes from 'prop-types';
 
 /**
- * @description Componente de carga de imágenes con funcionalidad de arrastrar y soltar.
+ * @description Componente de carga de imágenes con funcionalidad de arrastrar y soltar
  * Permite al usuario seleccionar un archivo de imagen, ya sea haciendo clic en un botón
  * o arrastrándolo y soltándolo en el área designada.
  *

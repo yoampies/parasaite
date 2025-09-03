@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 /**
- * @description Componente contenedor estilizado para la página de inicio.
+ * @description Componente contenedor estilizado para la página de inicio
  * Muestra un título y renderiza cualquier contenido pasado como 'children'.
  * Es un componente de presentación sin lógica de estado interna.
  *

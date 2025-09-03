@@ -4,7 +4,7 @@ import Model from '../components/Model';
 function SectionRendering({ sections, parasiteName }) {
   // Esta función genera la ruta del modelo 3D basándose en el nombre completo del parásito y el título de la sección
   const getModelPathForSection = (title) => {
-    // Usamos el 'parasiteName' completo de la URL para que coincida con el nombre de tus archivos GLB.
+    // Usamos el 'parasiteName' completo de la URL para que coincida con el nombre de tus archivos GLB
     const baseName = parasiteName;
     
     let suffix = '';

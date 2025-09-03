@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 /**
- * @description A filter component that renders a list of selectable options with checkboxes.
+ * @description A filter component that renders a list of selectable options with checkboxes
  * This component manages its own state for selected options and notifies a parent
  * component of any changes.
  *

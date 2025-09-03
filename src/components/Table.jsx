@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 /**
  * @description Componente de tabla para mostrar una lista de parásitos y sus niveles de confianza.
- * Maneja la visualización de datos, incluyendo el caso donde no hay elementos.
+ * Maneja la visualización de datos, incluyendo el caso donde no hay elementos
  *
  * @param {object} props - Propiedades del componente.
  * @param {Array<Object>} props.parasites - Un array de objetos de parásitos, cada uno con 'label' y 'value'.

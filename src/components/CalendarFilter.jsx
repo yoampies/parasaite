@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { months } from '../assets/constants';
 
 // --- Funciones de Ayuda ---
-// Mover estas funciones fuera del componente evita que se vuelvan a crear en cada renderizado.
+// Mover estas funciones fuera del componente evita que se vuelvan a crear en cada renderizado
 
 /**
  * @description Obtiene el número de días en un mes específico.

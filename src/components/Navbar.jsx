@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 /**
- * @description Componente de barra de navegación principal.
+ * @description Componente de barra de navegación principal
  * Muestra el logo de la aplicación, enlaces de navegación, un botón de ayuda
  * y un avatar de perfil.
  */

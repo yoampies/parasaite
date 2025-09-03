@@ -5,7 +5,7 @@ import "rc-slider/assets/index.css";
 
 /**
  * @description Componente de filtro con slider de rango. Permite a los usuarios seleccionar
- * un rango de confianza y notifica al componente padre sobre los cambios.
+ * un rango de confianza y notifica al componente padre sobre los cambios
  *
  * @param {object} props - Propiedades del componente.
  * @param {string} props.title - El título del filtro.

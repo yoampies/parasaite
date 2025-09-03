@@ -17,7 +17,7 @@ const FEEDBACK_OPTIONS = [
 ];
 
 /**
- * @description Componente para enviar feedback sobre un análisis de parásitos.
+ * @description Componente para enviar feedback sobre un análisis de parásitos
  * Permite al usuario seleccionar un tipo de error y escribir una descripción detallada.
  */
 const ScannerFeedback = () => {

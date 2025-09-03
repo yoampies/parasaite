@@ -9,7 +9,7 @@ import HistoryCard from './HistoryCard';
 
 /**
  * @description Componente principal `Card` que renderiza una tarjeta específica
- * según la ruta actual de la aplicación.
+ * según la ruta actual de la aplicación
  *
  * @param {object} props - Propiedades del componente.
  * @param {string} props.title - Título de la tarjeta.

@@ -6,7 +6,7 @@ import { parasites } from '../assets/constants';
 /**
  * @description Componente de la página "Biblioteca de Parásitos". Muestra un listado
  * de parásitos cargados desde un archivo de datos, cada uno representado por una tarjeta
- * navegable.
+ * navegable
  */
 const Library = () => {
   return (
