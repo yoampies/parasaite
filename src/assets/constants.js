@@ -41,12 +41,6 @@ import cdvTrichurisIntestine from "/images/cdv-trichuris-intestine.jpg";
 import cdvTrichurisLarvae from "/images/cdv-trichuris-larvae.jpg";
 import cdvTrichurisMEgg from "/images/cdv-trichuris-m-egg.jpg";
 
-//SectionRendering.jsx
-import ascaris_video from "/videos/Ascaridiasis.mp4"
-import enterobius_trichuris_video from "/videos/Enterobiasis-Trichuriasis.mp4"
-import necator_video from "/videos/Anquilostomidiasis.mp4"
-import giardia_video from "/videos/Giardiasis.mp4"
-
 // Helper function to generate content from detected parasites
 const generateContent = (detectedParasites) => {
   if (detectedParasites && detectedParasites.length > 0) {
@@ -228,7 +222,7 @@ export const parasiteData = {
           {
             title: 'Descripción general',
             text: 'Ascaris lumbricoides es un parásito nematodo (gusano redondo) que causa la ascariasis. Es la infección por helmintos más común a nivel mundial, especialmente en áreas con saneamiento deficiente. El parásito se transmite a través de la ingestión de huevos de Ascaris presentes en el suelo o alimentos contaminados. Su ciclo de vida es complejo, involucrando una migración por los pulmones antes de madurar en el intestino.',
-            imgUrl: ascaris_video,
+            imgUrl: "",
           },
           {
             title: 'Importancia Clínica',
@@ -286,7 +280,7 @@ export const parasiteData = {
           {
             title: 'Descripción general',
             text: 'Enterobius vermicularis, conocido como oxiuro, es un nematodo que causa la enterobiasis. Es una de las infecciones por parásitos más comunes en los niños en todo el mundo. La transmisión es fecal-oral, a través de la ingesta de huevos, y a menudo por autoinfección o infección entre miembros de la misma familia.',
-            imgUrl: enterobius_trichuris_video,
+            imgUrl: "",
           },
           {
             title: 'Importancia Clínica',
@@ -340,7 +334,7 @@ export const parasiteData = {
           {
             title: 'Descripción general',
             text: 'Trichuris trichiura, o gusano látigo, es un parásito nematodo que causa la tricuriasis. Es un geohelminto, lo que significa que sus huevos se desarrollan en el suelo antes de volverse infecciosos. Las infecciones son más comunes en áreas tropicales y subtropicales con saneamiento deficiente.',
-            imgUrl: enterobius_trichuris_video,
+            imgUrl: "",
           },
           {
             title: 'Importancia Clínica',
@@ -402,7 +396,7 @@ export const parasiteData = {
           {
             title: 'Descripción general',
             text: 'Necator americanus es un nematodo parásito conocido como gusano gancho. Causa la uncinariasis, una de las principales causas de anemia en regiones tropicales. La infección ocurre cuando las larvas en el suelo penetran la piel del huésped humano.',
-            imgUrl: necator_video,
+            imgUrl: "",
           },
           {
             title: 'Importancia Clínica',
@@ -464,7 +458,7 @@ export const parasiteData = {
           {
             title: 'Descripción general',
             text: 'Giardia duodenalis, también conocida como Giardia lamblia, es un protozoo flagelado que causa la giardiasis. Es una de las causas más comunes de enfermedades diarreicas a nivel mundial. La infección se adquiere a través de la ingestión de quistes resistentes que se encuentran en el agua o alimentos contaminados.',
-            imgUrl: giardia_video,
+            imgUrl: "",
           },
           {
             title: 'Importancia Clínica',
