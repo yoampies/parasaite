@@ -7,7 +7,6 @@ import ScannerResults from './sections/ScannerResults';
 import ScannerFeedback from './sections/ScannerFeedback';
 import History from './sections/History';
 import Library from './sections/Library';
-import Settings from './sections/Settings';
 import ParasiteDetails from './sections/ParasiteDetails';
 
 function App() {
