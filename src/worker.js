@@ -2,7 +2,7 @@
 self.onmessage = async function(e) {
   console.log('Worker: Mensaje recibido. Simulando análisis y dibujo...');
   
-  const { imageBitmap, imageWidth, imageHeight, detectedParasites } = e.data;
+  const { imageWidth, imageHeight, detectedParasites } = e.data;
 
   setTimeout(() => {
     // Verificar si hay parásitos detectados

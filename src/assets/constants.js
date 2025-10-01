@@ -139,7 +139,6 @@ export const recentImages = [
             { label: 'Ascaris lumbricoides', value: 95 },
             { label: 'Trichuris trichiura', value: 89 },
         ],
-        // ⭐ ADDED THIS LINE ⭐
         content: generateContent([
             { label: 'Ascaris lumbricoides', value: 95 },
             { label: 'Trichuris trichiura', value: 89 },
@@ -153,7 +152,6 @@ export const recentImages = [
         detectedParasites: [
             { label: 'Giardia duodenalis', value: 88 },
         ],
-        // ⭐ ADDED THIS LINE ⭐
         content: generateContent([
             { label: 'Giardia duodenalis', value: 88 },
         ]),
@@ -166,7 +164,6 @@ export const recentImages = [
         detectedParasites: [
             { label: 'Enterobius vermicularis', value: 75 },
         ],
-        // ⭐ ADDED THIS LINE ⭐
         content: generateContent([
             { label: 'Enterobius vermicularis', value: 75 },
         ]),

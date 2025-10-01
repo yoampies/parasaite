@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import gsap from "gsap"
 import PropTypes from 'prop-types';
 
 // Componentes
@@ -10,6 +11,7 @@ import Error from '../components/Error';
 
 // Constantes
 import { recentAnalyses as recentAnalysesConstant, recentImages as recentImagesConstant } from '../assets/constants';
+import useImageAnalysisWorker from '../components/UseImageAnalysisWorker';
 
 /**
  * @description Componente para mostrar los resultados de un análisis de parásitos
@@ -22,12 +24,13 @@ function ScannerResults() {
 
   // State
   const [analysis, setAnalysis] = useState(null);
-  const [detectedParasites, setDetectedParasites] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Refs
   const canvasRef = useRef(null);
   const imgRef = useRef(null);
+  const progressBarRef = useRef(null);
+  const scannerContainerRef = useRef(null);
 
   /**
    * @description Centraliza la lógica para encontrar el análisis,
@@ -46,13 +49,9 @@ function ScannerResults() {
     // Si se encuentra el análisis, se guarda el estado y los parásitos detectados.
     if (foundAnalysis) {
       setAnalysis(foundAnalysis);
-      // Asume que los parásitos detectados ya están en el objeto de análisis
-      setDetectedParasites(foundAnalysis.detectedParasites || []);
     } else {
       setAnalysis(null);
     }
-    
-    setIsLoading(false);
   }, [analysisId, location.state]);
 
   /**
@@ -75,44 +74,44 @@ function ScannerResults() {
         ctx.strokeRect(result.x, result.y, result.width, result.height);
       });
     }
-    setIsLoading(false);
   }, []);
 
   /**
    * @description Maneja la lógica del Web Worker para el análisis de imágenes.
    * Se ejecuta cuando el análisis está disponible.
    */
-  useEffect(() => {
-    if (!analysis || !imgRef.current || !canvasRef.current) return;
+  const {detectedParasites, isLoading} = useImageAnalysisWorker(
+    imageLoaded,
+    analysis, 
+    drawCanvas, 
+    imgRef, 
+    canvasRef, 
+    progressBarRef, 
+    scannerContainerRef);
 
-    const img = imgRef.current;
-    
-    // Simulación del Web Worker
-    const simulateWorkerAnalysis = () => {
-        // En una aplicación real, aquí se llamaría al worker.
-        // Simulamos los resultados con los datos de análisis existentes.
-        const results = analysis.detectedParasites.map((p, index) => ({
-            id: index,
-            label: p.label,
-            value: p.value,
-            // Valores de ejemplo para los recuadros delimitadores (bounding boxes)
-            x: Math.random() * img.naturalWidth,
-            y: Math.random() * img.naturalHeight,
-            width: 100,
-            height: 100
-        }));
-        
-        // Asumiendo que el worker devuelve directamente los datos de los parásitos con las coordenadas
-        setDetectedParasites(results);
-        drawCanvas(results);
-    };
+  const aggregatedData = useMemo(() => {
+    if (!detectedParasites || detectedParasites.length === 0) return [];
 
-    if (img.complete) {
-        simulateWorkerAnalysis();
-    } else {
-        img.onload = () => simulateWorkerAnalysis();
-    }
-  }, [analysis, drawCanvas]);
+    const parasitesMap = detectedParasites.reduce((acc, currentBox) => {
+      const parasite = currentBox.detectedParasites[0];
+      const label = parasite.label;
+      const confidenceLevel = parasite.value;
+
+      if (acc[label]) {
+        acc[label].sum += confidenceLevel;
+        acc[label].count += 1;
+      } else {
+        acc[label] = {label: label, sum: confidenceLevel, count: 1}
+      }
+
+      return acc;
+    }, {})
+
+    return Object.values(parasitesMap).map((parasite) => ({
+      label: parasite.label,
+      value: parasite.sum/parasite.count
+    }));
+  }, [detectedParasites]); 
 
   /**
    * @description Navega a la página de feedback y guarda el análisis actual en localStorage.
@@ -123,7 +122,6 @@ function ScannerResults() {
     localStorage.setItem('currentAnalysis', JSON.stringify(analysis));
     navigate(`/feedback/${analysisId}`);
   };
-
   // Renderiza un componente de error si el análisis no se encuentra.
   if (!analysis) {
     return (
@@ -145,7 +143,7 @@ function ScannerResults() {
             <div className="flex flex-wrap justify-between gap-3 p-4">
               <p className="text-[#101816] tracking-light text-[32px] font-bold leading-tight min-w-72">Resultados del Análisis</p>
             </div>
-            <div className="flex w-full grow bg-white @container p-4">
+            <div className="flex w-full grow bg-white @container p-4" ref={scannerContainerRef}>
               <div className="w-full gap-1 overflow-hidden bg-white @[480px]:gap-2 aspect-[3/2] rounded-lg flex relative">
                 {analysis.imgURL && (
                   <img 
@@ -154,19 +152,27 @@ function ScannerResults() {
                     alt="Imagen del análisis"
                     crossOrigin="anonymous" 
                     style={{ display: 'none' }}
+                    onLoad={() => setImageLoaded(true)}
                   />
                 )}
                 <canvas ref={canvasRef} className="w-full h-full object-cover rounded-none"></canvas>
                 {isLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white text-lg">
-                    Analizando imagen...
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white text-lg flex-col">
+                    <p>Analizando imagen...</p>
+                    <div className="w-4/5 h-2 bg-gray-200 rounded-full mt-4">
+                      <div 
+                        ref={progressBarRef}
+                        className="h-2 bg-[#00c795] rounded-full" 
+                        style={{ width: '0%' }}
+                    />
+                    </div>
                   </div>
-                )}
+                )} 
               </div>
             </div>
             <h3 className="text-[#101816] text-lg font-bold leading-tight tracking-[-0.015em] px-4 pb-2 pt-4">Parásitos Detectados</h3>
             <div className="px-4 py-3 @container">
-                <Table parasites={detectedParasites} /> 
+                <Table parasites={aggregatedData} /> 
             </div>
           </div>
           <div className="layout-content-container flex flex-col w-[360px]">
@@ -175,7 +181,7 @@ function ScannerResults() {
               <div className="flex min-w-72 flex-1 flex-col gap-2 rounded-lg border border-[#dae7e3] p-6">
                 <p className="text-[#101816] text-base font-medium leading-normal">Distribución de Parásitos</p>
                 <div className="h-full">
-                  <HorizontalBarChart data={detectedParasites} />
+                  <HorizontalBarChart data={aggregatedData} />
                 </div>
               </div>
             </div>
