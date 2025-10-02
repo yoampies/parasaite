@@ -522,3 +522,31 @@ export const parasiteData = {
     },
   },
 };
+
+export const data = [
+    { id: "02", detections: 45 },           // Amazonas
+    { id: "03", detections: 120 },          // Anzoategui
+    { id: "04", detections: 20 },           // Apure
+    { id: "05", detections: 250 },          // Aragua
+    { id: "06", detections: 85 },           // Barinas
+    { id: "07", detections: 300 },          // Bolívar
+    { id: "08", detections: 150 },          // Carabobo
+    { id: "09", detections: 70 },           // Cojedes
+    { id: "10", detections: 15 },           // Delta Amacuro
+    { id: "01", detections: 350 },          // Distrito Capital
+    { id: "11", detections: 90 },           // Falcón
+    { id: "12", detections: 110 },          // Guárico
+    { id: "13", detections: 180 },          // Lara
+    { id: "14", detections: 220 },          // Mérida
+    { id: "15", detections: 400 },          // Miranda
+    { id: "16", detections: 60 },           // Monagas
+    { id: "17", detections: 10 },           // Nueva Esparta
+    { id: "18", detections: 130 },          // Portuguesa
+    { id: "19", detections: 40 },           // Sucre
+    { id: "20", detections: 190 },          // Táchira
+    { id: "21", detections: 160 },          // Trujillo
+    { id: "24", detections: 380 },          // Vargas (La Guaira)
+    { id: "22", detections: 55 },           // Yaracuy
+    { id: "00", detections: 5 },            // Zona en Reclamación
+    { id: "23", detections: 280 }           // Zulia
+];

@@ -5,6 +5,8 @@ import Card from "../components/Card";
 import BarChart from "../components/BarChart";
 import HorizontalBarChart from '../components/HorizontalBarChart';
 import dashboardData from "../assets/dashboardData.json";
+import ParGeoMap from "../assets/ParGeoMap"
+import VenGeoURL from "../assets/venezuela.geojson?url"
 
 // Define the data structure for the epidemiological cards
 const epidemiologicalCards = [
@@ -22,12 +24,17 @@ const epidemiologicalCards = [
  */
 const Home = () => {
   const [data, setData] = useState(null);
+  const [geoData, setGeoData] = useState(null);
 
   useEffect(() => {
     // Simulate an API call with a delay for a more realistic loading experience.
     const fetchData = async () => {
       // await new Promise(resolve => setTimeout(resolve, 500)); // Simulate a delay
       setData(dashboardData);
+
+      const response = await fetch(VenGeoURL);
+      const geoJson = await response.json();
+      setGeoData(geoJson);
     };
 
     fetchData();
@@ -81,6 +88,7 @@ const Home = () => {
                   <HorizontalBarChart data={epidemiology[card.key]} />
                 </Card>
               ))}
+              <ParGeoMap geometry={geoData}/>
             </div>
           </div>
         </div>
