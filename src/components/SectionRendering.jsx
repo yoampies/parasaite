@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Model from '../components/Model';
+import { Canvas } from '@react-three/fiber'
 
-function SectionRendering({ sections, parasiteName }) {
+function SectionRendering({ sections, parasiteName, isExpanded, setIsExpanded, setExpandedModelPath, parasiteRotation }) {
   // Esta función genera la ruta del modelo 3D basándose en el nombre completo del parásito y el título de la sección
   const getModelPathForSection = (title) => {
     // Usamos el 'parasiteName' completo de la URL para que coincida con el nombre de tus archivos GLB
@@ -26,7 +27,6 @@ function SectionRendering({ sections, parasiteName }) {
     return null;
   };
 
-  const parasiteRotation = ['ascaris-lumbricoides', 'enterobius-vermicularis', 'trichuris-trichiura'].includes(parasiteName) ? [-2.5, -2, 0] : [0, 0, 0];
   return (
     <>
       {sections.map((section, index) => {
@@ -44,24 +44,19 @@ function SectionRendering({ sections, parasiteName }) {
             )}
 
             {/* Renderizado condicional: si hay una ruta de modelo 3D, muestra el modelo */}
-            {modelPath ? (
+            {modelPath && !isExpanded && (
               <div className="w-full h-[500px] p-4">
-                <Model modelPath={modelPath} rotation={parasiteRotation}/>
+                <Canvas camera={{ position: [0, 0, 3], fov: 45 }}>
+                  <Model 
+                    modelPath={modelPath} 
+                    rotation={parasiteRotation}
+                    setIsExpanded={() => {
+                      setIsExpanded(true)
+                      setExpandedModelPath(modelPath)
+                    }}
+                  />
+                </Canvas>
               </div>
-            ) : (
-              // De lo contrario, si hay una imgUrl, muestra la imagen estática
-              section.imgUrl && (
-                <div className="p-4">
-                  <video
-                    className="aspect-video rounded-lg w-full h-full"
-                    src= {section.imgUrl}
-                    controls
-                    poster="URL_DE_IMAGEN_DE_PREVISUALIZACION.jpg"
-                  >
-                    Tu navegador no soporta la etiqueta de video.
-                  </video>
-                </div>
-              )
             )}
             
             {section.stages && (

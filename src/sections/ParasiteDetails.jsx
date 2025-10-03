@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
+import ExpandedModelCard from '../components/ExpandedModelCard';
 
 // Componentes
 import Navbar from '../components/Navbar';
@@ -20,6 +21,8 @@ const ParasiteDetails = () => {
   const { parasiteName } = useParams();
   // Usa el estado para controlar qué pestaña está activa, con 'overview' como valor inicial.
   const [activeTab, setActiveTab] = useState('overview');
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [expandedModelPath, setExpandedModelPath] = useState(null)
 
   // Con `useMemo`, se busca el parásito en los datos solo cuando `parasiteName` cambia.
   const parasite = useMemo(
@@ -58,7 +61,16 @@ const ParasiteDetails = () => {
     lifeCycle: 'Ciclo de Vida',
   };
 
+  const parasiteRotation = ['ascaris-lumbricoides', 'enterobius-vermicularis', 'trichuris-trichiura'].includes(parasiteName) ? [-2.5, -2, 0] : [0, 0, 0];
+
   return (
+    <>
+    {isExpanded && <ExpandedModelCard 
+        isExpanded={isExpanded} 
+        setIsExpanded={setIsExpanded} 
+        modelPath={expandedModelPath}
+        rotation={parasiteRotation}  
+    />}
     <div className="relative flex size-full min-h-screen flex-col bg-white group/design-root overflow-x-hidden font-inter">
       <div className="layout-container flex h-full grow flex-col">
         <Navbar />
@@ -102,11 +114,19 @@ const ParasiteDetails = () => {
             </div>
             
             {/* Contenido de la sección, renderizado dinámicamente según la pestaña activa */}
-            <SectionRendering sections={sections} parasiteName={parasiteName} />
+            <SectionRendering 
+              sections={sections} 
+              parasiteName={parasiteName}
+              isExpanded={isExpanded} 
+              setIsExpanded={setIsExpanded}
+              setExpandedModelPath={setExpandedModelPath}
+              parasiteRotation={parasiteRotation}
+            />
           </div>
         </div>
       </div>
     </div>
+    </>
   );
 };
 

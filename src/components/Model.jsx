@@ -1,7 +1,7 @@
-import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import React from 'react';
 import PropTypes from 'prop-types';
+import * as THREE from "three";
 
 /**
  * @description Un componente auxiliar para cargar dinámicamente cualquier modelo GLTF
@@ -9,13 +9,20 @@ import PropTypes from 'prop-types';
  * @param {string} props.modelPath - La ruta al archivo de modelo 3D (.gltf o .glb).
  * @param {Array<number>} props.rotation - La rotación del modelo en el espacio 3D, en radianes [x, y, z].
  */
-const DynamicModel = ({ modelPath, rotation }) => {
+
+const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded }) => {
   // `useGLTF` carga el archivo GLB desde la ruta proporcionada.
   const { scene } = useGLTF(modelPath);
 
   // Renderiza la escena del modelo 3D.
   // El tag <primitive> permite renderizar objetos 3D directamente.
-  return <primitive object={scene} rotation={rotation} />;
+  const clickHandler = !isExpanded ? setIsExpanded : undefined;
+
+  return <primitive 
+          object={scene} 
+          rotation={rotation}
+          onClick={clickHandler}
+        />;
 };
 
 /**
@@ -26,13 +33,13 @@ const DynamicModel = ({ modelPath, rotation }) => {
  * @param {string} props.modelPath - La ruta al archivo de modelo 3D (.gltf o .glb).
  * @param {Array<number>} props.rotation - La rotación del modelo en el espacio 3D, en radianes [x, y, z].
  */
-function Model({ modelPath, rotation }) {
+function Model({ modelPath, rotation, isExpanded, setIsExpanded }) {
   // Pre-carga el modelo para una experiencia de usuario más fluida.
   // Es una buena práctica llamar a esto aquí para que React se encargue de la gestión del caché.
   useGLTF.preload(modelPath);
 
   return (
-    <Canvas camera={{ position: [0, 0, 3], fov: 45 }}>
+    <>
       {/* Luces para iluminar el modelo */}
       <ambientLight intensity={1} color="#1a1a40" />
       <directionalLight position={[0, 0, 5]} intensity={5} />
@@ -45,15 +52,23 @@ function Model({ modelPath, rotation }) {
       />
 
       {/* Renderiza el modelo solo si la ruta es válida */}
-      {modelPath && <DynamicModel modelPath={modelPath} rotation={rotation} />}
-    </Canvas>
-  );
+      {modelPath && <DynamicModel
+                      modelPath={modelPath} 
+                      rotation={rotation} 
+                      isExpanded={isExpanded}
+                      setIsExpanded={setIsExpanded}
+                    />
+      }
+    </>
+  );  
 }
 
 // **Validación de Propiedades con PropTypes**
 Model.propTypes = {
   modelPath: PropTypes.string.isRequired,
   rotation: PropTypes.arrayOf(PropTypes.number),
+  isExpanded: PropTypes.bool,
+  setIsExpanded: PropTypes.func.isRequired,
 };
 
 // **Propiedades por Defecto**
