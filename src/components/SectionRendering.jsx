@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import Model from '../components/Model';
-import { Canvas } from '@react-three/fiber'
+import ModelCanvas from './ModelCanvas';
 
-function SectionRendering({ sections, parasiteName, isExpanded, setIsExpanded, setExpandedModelPath, parasiteRotation }) {
+function SectionRendering({ sections, parasiteName, scrollPositionRef, isExpanded, setIsExpanded, setExpandedModelPath, parasiteRotation }) {
   // Esta función genera la ruta del modelo 3D basándose en el nombre completo del parásito y el título de la sección
   const getModelPathForSection = (title) => {
     // Usamos el 'parasiteName' completo de la URL para que coincida con el nombre de tus archivos GLB
@@ -46,16 +45,13 @@ function SectionRendering({ sections, parasiteName, isExpanded, setIsExpanded, s
             {/* Renderizado condicional: si hay una ruta de modelo 3D, muestra el modelo */}
             {modelPath && !isExpanded && (
               <div className="w-full h-[500px] p-4">
-                <Canvas camera={{ position: [0, 0, 3], fov: 45 }}>
-                  <Model 
-                    modelPath={modelPath} 
-                    rotation={parasiteRotation}
-                    setIsExpanded={() => {
-                      setIsExpanded(true)
-                      setExpandedModelPath(modelPath)
-                    }}
-                  />
-                </Canvas>
+                <ModelCanvas 
+                  modelPath={modelPath} 
+                  rotation={parasiteRotation}
+                  scrollPositionRef={scrollPositionRef}
+                  setIsExpanded={setIsExpanded}
+                  setExpandedModelPath={setExpandedModelPath}
+                />
               </div>
             )}
             

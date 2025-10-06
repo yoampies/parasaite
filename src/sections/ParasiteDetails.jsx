@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect} from 'react';
 import { useParams, Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import ExpandedModelCard from '../components/ExpandedModelCard';
@@ -21,8 +21,8 @@ const ParasiteDetails = () => {
   const { parasiteName } = useParams();
   // Usa el estado para controlar qué pestaña está activa, con 'overview' como valor inicial.
   const [activeTab, setActiveTab] = useState('overview');
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [expandedModelPath, setExpandedModelPath] = useState(null)
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [expandedModelPath, setExpandedModelPath] = useState(null);
 
   // Con `useMemo`, se busca el parásito en los datos solo cuando `parasiteName` cambia.
   const parasite = useMemo(
@@ -30,9 +30,19 @@ const ParasiteDetails = () => {
     [parasiteName]
   );
 
+  const scrollPositionRef = useRef(null);
+
   // De igual manera, se obtienen los datos detallados del parásito de forma memorizada.
   const currentParasiteData = useMemo(() => parasiteData[parasiteName], [parasiteName]);
 
+  useEffect(() => {
+    if(!isExpanded) {        
+        requestAnimationFrame(() => {
+            window.scrollTo(0, scrollPositionRef.current);
+        });
+    }
+  }, [isExpanded])
+  
   // Maneja el caso en que la URL no coincida con un parásito existente.
   if (!parasite || !currentParasiteData) {
     return (
@@ -69,9 +79,9 @@ const ParasiteDetails = () => {
         isExpanded={isExpanded} 
         setIsExpanded={setIsExpanded} 
         modelPath={expandedModelPath}
-        rotation={parasiteRotation}  
+        rotation={parasiteRotation}
     />}
-    <div className="relative flex size-full min-h-screen flex-col bg-white group/design-root overflow-x-hidden font-inter">
+    <div className="relative flex size-full min-h-screen flex-col bg-white group/design-root font-inter">
       <div className="layout-container flex h-full grow flex-col">
         <Navbar />
         <div className="px-40 flex flex-1 justify-center py-5">
@@ -117,6 +127,7 @@ const ParasiteDetails = () => {
             <SectionRendering 
               sections={sections} 
               parasiteName={parasiteName}
+              scrollPositionRef = {scrollPositionRef}
               isExpanded={isExpanded} 
               setIsExpanded={setIsExpanded}
               setExpandedModelPath={setExpandedModelPath}

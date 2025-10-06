@@ -1,7 +1,7 @@
-import { OrbitControls, useGLTF } from '@react-three/drei';
-import React from 'react';
+import { OrbitControls, useGLTF, useCursor } from '@react-three/drei';
+import React, {useState, useMemo, memo} from 'react';
 import PropTypes from 'prop-types';
-import * as THREE from "three";
+import * as THREE from "three"
 
 /**
  * @description Un componente auxiliar para cargar dinámicamente cualquier modelo GLTF
@@ -10,18 +10,25 @@ import * as THREE from "three";
  * @param {Array<number>} props.rotation - La rotación del modelo en el espacio 3D, en radianes [x, y, z].
  */
 
-const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded }) => {
+const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, activePart, setActivePart }) => {
   // `useGLTF` carga el archivo GLB desde la ruta proporcionada.
   const { scene } = useGLTF(modelPath);
 
-  // Renderiza la escena del modelo 3D.
-  // El tag <primitive> permite renderizar objetos 3D directamente.
-  const clickHandler = !isExpanded ? setIsExpanded : undefined;
+  const onPartSelect = (e) => {
+    if(isExpanded) {
+      e.stopPropagation();
+      setActivePart(e.object.name)
+      console.log(e.object.name);
+    } else {
+      e.stopPropagation();
+      setIsExpanded(true);
+    }
+  }
 
   return <primitive 
           object={scene} 
           rotation={rotation}
-          onClick={clickHandler}
+          onClick={(e) => onPartSelect(e)}
         />;
 };
 
@@ -33,7 +40,7 @@ const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded }) => {
  * @param {string} props.modelPath - La ruta al archivo de modelo 3D (.gltf o .glb).
  * @param {Array<number>} props.rotation - La rotación del modelo en el espacio 3D, en radianes [x, y, z].
  */
-function Model({ modelPath, rotation, isExpanded, setIsExpanded }) {
+function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, setActivePart }) {
   // Pre-carga el modelo para una experiencia de usuario más fluida.
   // Es una buena práctica llamar a esto aquí para que React se encargue de la gestión del caché.
   useGLTF.preload(modelPath);
@@ -57,6 +64,8 @@ function Model({ modelPath, rotation, isExpanded, setIsExpanded }) {
                       rotation={rotation} 
                       isExpanded={isExpanded}
                       setIsExpanded={setIsExpanded}
+                      activePart={activePart}
+                      setActivePart={setActivePart}
                     />
       }
     </>
@@ -76,4 +85,4 @@ Model.defaultProps = {
   rotation: [0, 0, 0], // Rotación por defecto a 0 en todos los ejes
 };
 
-export default Model;
+export default memo(Model);
