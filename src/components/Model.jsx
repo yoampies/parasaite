@@ -1,5 +1,5 @@
 import { OrbitControls, useGLTF, useCursor } from '@react-three/drei';
-import React, {useState, useMemo, memo} from 'react';
+import React, {useRef, memo} from 'react';
 import PropTypes from 'prop-types';
 import * as THREE from "three"
 
@@ -10,26 +10,27 @@ import * as THREE from "three"
  * @param {Array<number>} props.rotation - La rotación del modelo en el espacio 3D, en radianes [x, y, z].
  */
 
-const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, activePart, setActivePart }) => {
-  // `useGLTF` carga el archivo GLB desde la ruta proporcionada.
-  const { scene } = useGLTF(modelPath);
+const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, setActivePart }) => {
+    const { scene } = useGLTF(modelPath);
+    const lastSelected = useRef();
 
-  const onPartSelect = (e) => {
-    if(isExpanded) {
-      e.stopPropagation();
-      setActivePart(e.object.name)
-      console.log(e.object.name);
-    } else {
-      e.stopPropagation();
-      setIsExpanded(true);
-    }
-  }
+    const onPartSelect = (e) => {
+        e.stopPropagation();
 
-  return <primitive 
-          object={scene} 
-          rotation={rotation}
-          onClick={(e) => onPartSelect(e)}
-        />;
+        if (isExpanded) {
+            if (lastSelected.current) {
+                lastSelected.current.material.color.set('white');
+            }
+            e.object.material = e.object.material.clone();
+            e.object.material.color.set('cyan');
+            lastSelected.current = e.object;
+            setActivePart(e.object.name);
+        } else {
+            setIsExpanded(true);
+        }
+    };
+
+    return <primitive object={scene} rotation={rotation} onClick={onPartSelect} />;
 };
 
 /**

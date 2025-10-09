@@ -1,20 +1,7 @@
-import React, {useEffect, useState} from 'react'
+import React, {useState} from 'react'
 import Model from './Model'
 import { Canvas, useThree } from '@react-three/fiber'
-import { useGLTF } from '@react-three/drei';
-
-const WebGLCleanup = ({modelPath}) => {
-    const {gl} = useThree();
-
-    useEffect(() => {
-        return () => {
-            gl.dispose();
-            useGLTF.clear(modelPath);
-        }
-    }, [gl, modelPath]);
-
-    return null;
-};
+import WebGLCleanup from './WebGLCleanup';
 
 function ExpandedModelCard({isExpanded, setIsExpanded, modelPath, rotation}) {
 
@@ -37,7 +24,9 @@ function ExpandedModelCard({isExpanded, setIsExpanded, modelPath, rotation}) {
                     setActivePart={setActivePart}
                 />
             </Canvas>
-            <div className="w-1/3 bg-gray-200"></div>
+            <div className="w-1/3 bg-gray-200">
+                La parte seleccionada es: {activePart}
+            </div>
         </div>
         <button 
             className="absolute top-4 left-4 text-white text-3xl z-60"
