@@ -8,7 +8,6 @@ function WebGLCleanup({modelPath}) {
     useEffect(() => {
         return () => {
             useGLTF.clear(modelPath);
-            gl.dispose();
         }
     }, [gl, modelPath]);   
 

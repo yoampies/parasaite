@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { memo } from 'react';
 import ModelCanvas from './ModelCanvas';
 
 function SectionRendering({ sections, parasiteName, scrollPositionRef, isExpanded, setIsExpanded, setExpandedModelPath, parasiteRotation }) {
@@ -78,4 +78,4 @@ function SectionRendering({ sections, parasiteName, scrollPositionRef, isExpande
   );
 }
 
-export default SectionRendering;
+export default memo(SectionRendering);

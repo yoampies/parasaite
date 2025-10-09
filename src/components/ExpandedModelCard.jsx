@@ -1,11 +1,18 @@
-import React, {useState} from 'react'
+import React, {useState, useEffect} from 'react'
 import Model from './Model'
-import { Canvas, useThree } from '@react-three/fiber'
-import WebGLCleanup from './WebGLCleanup';
+import { Canvas } from '@react-three/fiber'
+import { useGLTF } from '@react-three/drei';
 
 function ExpandedModelCard({isExpanded, setIsExpanded, modelPath, rotation}) {
 
     const [activePart, setActivePart] = useState(null);
+
+    useEffect(() => {
+        return () => {
+            // Limpia el caché GLTF global cuando el canvas pequeño se desmonta
+            useGLTF.clear(modelPath); 
+        };
+    }, [modelPath]);
 
   return (
     <div className='!fixed w-full h-full bg-gray-500 z-50 inset-0'>
@@ -13,9 +20,8 @@ function ExpandedModelCard({isExpanded, setIsExpanded, modelPath, rotation}) {
             <Canvas 
                 camera={{ position: [0, 0, 3], fov: 45 }}
                 className="w-2/3 h-full"   
-                dpr={[1,2]}
+                dpr={[1, 2]}
             >
-                <WebGLCleanup modelPath={modelPath}/>
                 <Model 
                     modelPath={modelPath} 
                     rotation={rotation}
@@ -25,7 +31,7 @@ function ExpandedModelCard({isExpanded, setIsExpanded, modelPath, rotation}) {
                 />
             </Canvas>
             <div className="w-1/3 bg-gray-200">
-                La parte seleccionada es: {activePart}
+                La parte seleccionada es: {activePart}. El modelPath es {modelPath}
             </div>
         </div>
         <button 

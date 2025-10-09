@@ -1,7 +1,6 @@
-import { OrbitControls, useGLTF, useCursor } from '@react-three/drei';
-import React, {useRef, memo} from 'react';
+import { OrbitControls, useGLTF } from '@react-three/drei';
+import React, { useRef, memo } from 'react';
 import PropTypes from 'prop-types';
-import * as THREE from "three"
 
 /**
  * @description Un componente auxiliar para cargar dinámicamente cualquier modelo GLTF
@@ -9,6 +8,8 @@ import * as THREE from "three"
  * @param {string} props.modelPath - La ruta al archivo de modelo 3D (.gltf o .glb).
  * @param {Array<number>} props.rotation - La rotación del modelo en el espacio 3D, en radianes [x, y, z].
  */
+
+// Model.jsx
 
 const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, setActivePart }) => {
     const { scene } = useGLTF(modelPath);
@@ -18,18 +19,22 @@ const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, setActiv
         e.stopPropagation();
 
         if (isExpanded) {
+            // Lógica de selección básica (cuando está en el ExpandedCard)
             if (lastSelected.current) {
-                lastSelected.current.material.color.set('white');
+                // Restauramos al color "original" (asumiendo que era blanco o similar)
+                lastSelected.current.material.color.set('white'); 
             }
             e.object.material = e.object.material.clone();
             e.object.material.color.set('cyan');
             lastSelected.current = e.object;
             setActivePart(e.object.name);
         } else {
-            setIsExpanded(true);
+            // Lógica de expansión (cuando está en el ModelCanvas pequeño)
+            setIsExpanded(true); 
         }
     };
 
+    // Retornamos solo la primitiva con el onClick
     return <primitive object={scene} rotation={rotation} onClick={onPartSelect} />;
 };
 
@@ -41,7 +46,7 @@ const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, setActiv
  * @param {string} props.modelPath - La ruta al archivo de modelo 3D (.gltf o .glb).
  * @param {Array<number>} props.rotation - La rotación del modelo en el espacio 3D, en radianes [x, y, z].
  */
-function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, setActivePart }) {
+function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, setActivePart, yOffset = 0 }) {
   // Pre-carga el modelo para una experiencia de usuario más fluida.
   // Es una buena práctica llamar a esto aquí para que React se encargue de la gestión del caché.
   useGLTF.preload(modelPath);
@@ -49,14 +54,15 @@ function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, set
   return (
     <>
       {/* Luces para iluminar el modelo */}
-      <ambientLight intensity={1} color="#1a1a40" />
-      <directionalLight position={[0, 0, 5]} intensity={5} />
+      <ambientLight intensity={1} color="#fafafa" />
+      <directionalLight position={[0, 0, 5]} intensity={7} />
 
       {/* Controles de órbita para la interacción del usuario */}
       <OrbitControls
         enablePan={false}
         maxDistance={5}
         minDistance={1}
+        target={[0, yOffset, 0]}
       />
 
       {/* Renderiza el modelo solo si la ruta es válida */}

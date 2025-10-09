@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect} from 'react';
 import { useParams, Link } from 'react-router-dom';
-import PropTypes from 'prop-types';
 import ExpandedModelCard from '../components/ExpandedModelCard';
 
 // Componentes
@@ -81,7 +80,7 @@ const ParasiteDetails = () => {
         modelPath={expandedModelPath}
         rotation={parasiteRotation}
     />}
-    <div className="relative flex size-full min-h-screen flex-col bg-white group/design-root font-inter">
+    {!isExpanded && (<div className="relative flex size-full min-h-screen flex-col bg-white group/design-root font-inter">
       <div className="layout-container flex h-full grow flex-col">
         <Navbar />
         <div className="px-40 flex flex-1 justify-center py-5">
@@ -136,7 +135,7 @@ const ParasiteDetails = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div>)}
     </>
   );
 };
