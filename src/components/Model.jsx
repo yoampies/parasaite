@@ -49,7 +49,6 @@ const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, setActiv
 function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, setActivePart, yOffset = 0 }) {
   // Pre-carga el modelo para una experiencia de usuario más fluida.
   // Es una buena práctica llamar a esto aquí para que React se encargue de la gestión del caché.
-  useGLTF.preload(modelPath);
 
   return (
     <>

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei'; // Para la limpieza de caché
-import Model from './Model'; // Asegúrate de que la ruta sea correcta
+import { useGLTF } from '@react-three/drei'; 
+import Model from './Model'; 
 
 // Componente principal que contiene el Canvas del modelo pequeño
 function ModelCanvas({ modelPath, rotation, scrollPositionRef, setIsExpanded, setExpandedModelPath}) {
@@ -21,7 +21,6 @@ function ModelCanvas({ modelPath, rotation, scrollPositionRef, setIsExpanded, se
                 camera={{ position: ascarisCloseUp, fov: 45 }}
                 dpr={[1, 2]}    
             >
-                {/* Añadir la limpieza DENTRO del Canvas */}
                 <Model 
                     modelPath={modelPath} 
                     rotation={rotation}

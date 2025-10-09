@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import gsap from "gsap"
-import PropTypes from 'prop-types';
 
 // Componentes
 import Navbar from "../components/Navbar";

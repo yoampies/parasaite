@@ -550,3 +550,164 @@ export const data = [
     { id: "00", detections: 5 },            // Zona en Reclamación
     { id: "23", detections: 280 }           // Zulia
 ];
+
+export const model_mesh_details = {
+    // ====================================================================
+    // 1. ASCARIS LUMBRICOIDES
+    // ====================================================================
+    "ascaris-lumbricoides_A": {
+        "Cabeza_mesh": {
+            title: "Extremo Anterior (Boca)",
+            description: "Área de la boca con tres labios prominentes, utilizada para la ingesta de alimentos.",
+        },
+        "ExtAnt_mesh": {
+            title: "Parte Anterior del Cuerpo",
+            description: "Contiene estructuras digestivas y esofágicas.",
+        },
+        "ExtPost_mesh": {
+            title: "Parte Posterior del Cuerpo",
+            description: "Sección que contiene los órganos reproductivos y, en el macho, las espículas copuladoras.",
+        },
+        "Cola_mesh": {
+            title: "Cola (Macho/Hembra)",
+            description: "Forma curvada en el macho y recta en la hembra adulta.",
+        },
+        "DEFAULT": { title: "Ascaris lumbricoides Adulto", description: "Haz clic en una parte del modelo para ver su función." }
+    },
+
+    "ascaris-lumbricoides_H": {
+        "mesh_0": {
+            title: "Cáscara Mamilonada y Capa Albúmina",
+            description: "Capa externa gruesa y rugosa (mamilonada) que proporciona resistencia extrema en el medio ambiente.",
+        },
+        "DEFAULT": { 
+            title: "Huevo de Ascaris lumbricoides", 
+            description: "Modelo del huevo. En la vista de Rayos X, se observarán las múltiples capas internas (albúmina, quitina) y el embrión." 
+        }
+    },
+
+    // ====================================================================
+    // 2. ENTEROBIUS VERMICULARIS
+    // ====================================================================
+    "enterobius-vermicularis_A": {
+        "Cabeza_mesh": {
+            title: "Extremo Anterior y Alas Cefálicas",
+            description: "El área de la boca que, en las hembras, presenta expansiones cuticulares distintivas (alas cefálicas).",
+        },
+        "ExtAnt_mesh": {
+            title: "Esófago y Bulbo",
+            description: "La región que contiene el esófago, caracterizada por un bulbo posterior que ayuda a la succión.",
+        },
+        "ExtPost_mesh": {
+            title: "Útero (Hembra)",
+            description: "En la hembra, la porción del cuerpo que contiene el útero, a menudo lleno de huevos antes de la oviposición.",
+        },
+        "Cola_mesh": {
+            title: "Cola Filiforme",
+            description: "La cola larga y afilada, distintiva del oxiuro (pinworm).",
+        },
+        "DEFAULT": { title: "Enterobius vermicularis Adulto", description: "Haz clic en una parte del modelo para ver su función." }
+    },
+
+    "enterobius-vermicularis_H": {
+        "mesh_0": {
+            title: "Cáscara Lisa y Asimétrica",
+            description: "Capa externa lisa y transparente. Su forma es característicamente asimétrica, aplanada en un lado (parecido a una 'D').",
+        },
+        "DEFAULT": { 
+            title: "Huevo de Enterobius vermicularis", 
+            description: "Modelo del huevo. En la vista de Rayos X, se apreciará la larva en su interior, ya que se excretan larvados." 
+        }
+    },
+    
+    // ====================================================================
+    // 3. TRICHURIS TRICHIURA
+    // ====================================================================
+    "trichuris-trichiura_A": {
+        "ExtAnt_mesh": {
+            title: "Extremo Anterior Delgado (Látigo)",
+            description: "La parte delgada y filiforme del gusano, utilizada para insertarse en la mucosa intestinal y anclarse.",
+        },
+        "ExtPost_mesh": {
+            title: "Extremo Posterior Grueso (Mango)",
+            description: "La parte más gruesa del cuerpo, donde se encuentran los principales órganos digestivos y reproductivos.",
+        },
+        "DEFAULT": { title: "Trichuris trichiura Adulto", description: "Haz clic en una parte del modelo para ver su función." }
+    },
+
+    "trichuris-trichiura_H": {
+        "mesh_0": {
+            title: "Cáscara en Forma de Barril y Tapones Polares",
+            description: "Capa externa marrón y gruesa que le da una forma de barril o limón, con tapones polares hialinos en ambos extremos.",
+        },
+        "DEFAULT": { 
+            title: "Huevo de Trichuris trichiura", 
+            description: "Modelo del huevo. En la vista de Rayos X, destacará el embrión inmaduro y el área de los tapones polares." 
+        }
+    },
+
+    // ====================================================================
+    // 4. NECATOR AMERICANUS
+    // ====================================================================
+    "necator-americanus_A": {
+        "Cabeza_mesh": {
+            title: "Cápsula Bucal",
+            description: "La boca con placas cortantes que utiliza para adherirse a la pared intestinal y alimentarse de la sangre del huésped, causando anemia.",
+        },
+        "Cuerpo_mesh": {
+            title: "Cuerpo Adulto",
+            description: "El cuerpo en forma de 'C' o 'S' invertida, donde tiene lugar la digestión y la reproducción.",
+        },
+        "DEFAULT": { title: "Necator americanus Adulto", description: "Haz clic en una parte del modelo para ver su función." }
+    },
+
+    "necator-americanus_H": {
+        "mesh_0": {
+            title: "Cáscara Lisa y Segmentación",
+            description: "Capa externa muy delgada e incolora, lo que facilita observar las primeras etapas de segmentación de la célula interna.",
+        },
+        "DEFAULT": { 
+            title: "Huevo de Necator americanus", 
+            description: "Modelo del huevo. En la vista de Rayos X, se apreciará el espacio claro entre la capa exterior y el contenido celular." 
+        }
+    },
+
+    // ====================================================================
+    // 5. GIARDIA DUODENALIS (Quiste)
+    // ====================================================================
+    // Giardia no tiene un modelo 'Adulto' sino un Trofozoíto (forma activa)
+    "giardia-duodenalis_A": { 
+        "Nucleo_mesh": {
+            title: "Núcleos",
+            description: "Giardia posee dos núcleos prominentes (binucleado), que contienen el material genético del parásito.",
+        },
+        "DiscoVent_mesh": {
+            title: "Disco Adhesivo Ventral",
+            description: "Una estructura cóncava que el trofozoíto utiliza como 'ventosa' para adherirse firmemente a la mucosa del intestino delgado.",
+        },
+        "CuerpoMedio_mesh": {
+            title: "Axostilo y Cuerpos Medios",
+            description: "Estructuras internas que proporcionan soporte y rigidez, funcionando como un citoesqueleto central.",
+        },
+        "Cuerpo_mesh": {
+            title: "Cuerpo del Trofozoíto",
+            description: "La forma activa del parásito, caracterizada por su forma piriforme (de pera) y su simetría bilateral.",
+        },
+        "Flagelos_mesh": {
+            title: "Flagelos",
+            description: "Ocho apéndices filamentosos (cuatro pares) que permiten el movimiento rápido y activo del trofozoíto en el intestino.",
+        },
+        "DEFAULT": { title: "Giardia duodenalis Trofozoíto", description: "Haz clic en una parte para ver su función detallada." }
+    },
+
+    "giardia-duodenalis_H": { 
+        "mesh_0": {
+            title: "Pared Quística Gruesa y Elíptica",
+            description: "La pared quística es gruesa y altamente resistente al ambiente y a la cloración, siendo la forma infecciosa del parásito.",
+        },
+        "DEFAULT": { 
+            title: "Quiste de Giardia duodenalis", 
+            description: "Modelo del quiste. En la vista de Rayos X, se observarán las estructuras internas duplicadas (núcleos y axostilo) listas para la exquistación." 
+        }
+    }
+};
