@@ -1,4 +1,4 @@
-import { OrbitControls, useGLTF } from '@react-three/drei';
+import { OrbitControls, useGLTF, Html } from '@react-three/drei';
 import React, { useRef, memo, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useFrame } from '@react-three/fiber';
@@ -54,7 +54,11 @@ const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, activePa
     };
 
     // Retornamos solo la primitiva con el onClick
-    return <primitive object={scene} rotation={rotation} onClick={onPartSelect} />;
+    return (
+    <>
+      <primitive object={scene} rotation={rotation} onClick={onPartSelect} />
+    </>
+  )
 };
 
 /**
@@ -65,12 +69,12 @@ const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, activePa
  * @param {string} props.modelPath - La ruta al archivo de modelo 3D (.gltf o .glb).
  * @param {Array<number>} props.rotation - La rotación del modelo en el espacio 3D, en radianes [x, y, z].
  */
-function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, setActivePart, yOffset = 0, isXRayEnabled, focusPoint, setFocusPoint, setCardPosition }) {
+function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, setActivePart, isXRayEnabled, focusPoint, setFocusPoint, yOffset }) {
   
   const orbitRef = useRef();
 
   useFrame((state) => {
-    if(orbitRef.current && Array.isArray(focusPoint)) {
+    if(orbitRef.current && Array.isArray(focusPoint) && modelPath.endsWith("A.glb")) {
       const targetPosition = new THREE.Vector3(...focusPoint);
       
       orbitRef.current.target.lerp(targetPosition, 0.1);
@@ -91,6 +95,8 @@ function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, set
         maxDistance={5}
         minDistance={1}
         ref={orbitRef}
+        target={[0, yOffset, 0]} 
+
       />
 
       {/* Renderiza el modelo solo si la ruta es válida */}

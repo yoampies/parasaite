@@ -12,7 +12,6 @@ function ExpandedModelCard({isExpanded, setIsExpanded, modelPath, rotation}) {
     const [activePart, setActivePart] = useState(null);
     const [isXRayEnabled, setIsXRayEnabled] = useState(false);
     const [focusPoint, setFocusPoint] = useState([0, yOffset, 0])
-    const [cardPosition, setCardPosition] = useState(null); 
 
     const parts = modelPath.split("/");
     const filename = parts.pop();
@@ -30,7 +29,14 @@ function ExpandedModelCard({isExpanded, setIsExpanded, modelPath, rotation}) {
             // Limpia el caché GLTF global cuando el canvas pequeño se desmonta
             useGLTF.clear(modelPath); 
         };
-    }, [modelPath]);
+    }, [modelPath, yOffset]);
+
+    useEffect(() => {
+        if (isXRayEnabled) {
+            setFocusPoint([0, yOffset, 0]);
+            setActivePart(null);
+        }
+    }, [isXRayEnabled, yOffset])
 
   const xrayButtonClass = isXRayEnabled 
         ? "bg-[#5e8d81] text-white hover:bg-[#48736a]" 
@@ -48,13 +54,12 @@ function ExpandedModelCard({isExpanded, setIsExpanded, modelPath, rotation}) {
                         modelPath={modelPath} 
                         rotation={rotation}
                         isExpanded={isExpanded}
-                        yOffset={yOffset} 
                         setIsExpanded={setIsExpanded}
                         setActivePart={setActivePart}
                         isXRayEnabled={isXRayEnabled}
                         focusPoint={focusPoint}
                         setFocusPoint={setFocusPoint}
-                        setCardPosition={setCardPosition}
+                        yOffset={yOffset}
                     />
                 </Canvas>
                 <div className="w-1/3 bg-white p-8 flex flex-col justify-center">
