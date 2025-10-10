@@ -2,27 +2,13 @@ import React, {useState, useEffect} from 'react'
 import Model from './Model'
 import { Canvas } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei';
-import { model_mesh_details } from '../assets/constants';
+import { useModelLogic } from './UseModelLogic';
 
 function ExpandedModelCard({isExpanded, setIsExpanded, modelPath, rotation}) {
 
     const ascarisCloseUp = modelPath === "/models/ascaris-lumbricoides_A.glb" ? [0, 0.5, 1] : [0, 0, 3];
     const yOffset = modelPath === "/models/ascaris-lumbricoides_A.glb" ? 0.3 : 0;
-    
-    const [activePart, setActivePart] = useState(null);
-    const [isXRayEnabled, setIsXRayEnabled] = useState(false);
-    const [focusPoint, setFocusPoint] = useState([0, yOffset, 0])
-
-    const parts = modelPath.split("/");
-    const filename = parts.pop();
-    const fullModelSlug = filename.replace(".glb", "");
-    const parasiteData = model_mesh_details[fullModelSlug];
-    let parasiteDetails;
-    if (isXRayEnabled) {
-        parasiteDetails = parasiteData?.["XRAY_DETAILS"];
-    } else {
-        parasiteDetails = parasiteData?.[activePart] || parasiteData?.["DEFAULT"];
-    }
+    const {activePart, setActivePart, isXRayEnabled, setIsXRayEnabled, focusPoint, setFocusPoint, parasiteDetails } = useModelLogic(modelPath, yOffset);
     
     useEffect(() => {
         return () => {
@@ -30,13 +16,6 @@ function ExpandedModelCard({isExpanded, setIsExpanded, modelPath, rotation}) {
             useGLTF.clear(modelPath); 
         };
     }, [modelPath, yOffset]);
-
-    useEffect(() => {
-        if (isXRayEnabled) {
-            setFocusPoint([0, yOffset, 0]);
-            setActivePart(null);
-        }
-    }, [isXRayEnabled, yOffset])
 
   const xrayButtonClass = isXRayEnabled 
         ? "bg-[#5e8d81] text-white hover:bg-[#48736a]" 

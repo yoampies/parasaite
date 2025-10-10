@@ -18,8 +18,8 @@ const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, activePa
     const lastSelected = useRef();
 
     useEffect(() => {
-      const opacity = isXRayEnabled ? 0.2 : 1;
-      const color = isXRayEnabled ? "lightblue" : "white";
+      const opacity = isXRayEnabled ? 0.05 : 1;
+      const color = isXRayEnabled ? "#000000" : "white";
       const transparent = opacity < 1 ? true : false;
 
       scene.traverse((child) => {
