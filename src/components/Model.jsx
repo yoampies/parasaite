@@ -1,6 +1,8 @@
 import { OrbitControls, useGLTF } from '@react-three/drei';
-import React, { useRef, memo } from 'react';
+import React, { useRef, memo, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from "three";
 
 /**
  * @description Un componente auxiliar para cargar dinámicamente cualquier modelo GLTF
@@ -11,28 +13,32 @@ import PropTypes from 'prop-types';
 
 // Model.jsx
 
-const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, setActivePart, isXRayEnabled }) => {
+const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, activePart, setActivePart, isXRayEnabled, setFocusPoint }) => {
     const { scene } = useGLTF(modelPath);
     const lastSelected = useRef();
 
-    const opacity = isXRayEnabled ? 0.2 : 1;
-    const color = isXRayEnabled ? "lightblue" : "white";
-    const transparent = opacity < 1 ? true : false;
+    useEffect(() => {
+      const opacity = isXRayEnabled ? 0.2 : 1;
+      const color = isXRayEnabled ? "lightblue" : "white";
+      const transparent = opacity < 1 ? true : false;
 
-    scene.traverse((child) => {
-      if(child.isMesh){
-        child.material.color.set(color);
-        child.material.opacity = opacity;
-        child.material.transparent = transparent;
-        child.material.needsUpdate = true;
-      }
-    })
+      scene.traverse((child) => {
+        if(child.isMesh){
+          child.material.color.set(color);
+          child.material.opacity = opacity;
+          child.material.transparent = transparent;
+          child.material.needsUpdate = true;
+        }
+      })
+    }, [activePart, isXRayEnabled])
 
     const onPartSelect = (e) => {
         e.stopPropagation();
 
         if (isExpanded && !isXRayEnabled) {
             // Lógica de selección básica (cuando está en el ExpandedCard)
+            setFocusPoint(e.point.toArray());
+
             if (lastSelected.current) {
                 // Restauramos al color "original" (asumiendo que era blanco o similar)
                 lastSelected.current.material.color.set('white'); 
@@ -59,9 +65,19 @@ const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, setActiv
  * @param {string} props.modelPath - La ruta al archivo de modelo 3D (.gltf o .glb).
  * @param {Array<number>} props.rotation - La rotación del modelo en el espacio 3D, en radianes [x, y, z].
  */
-function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, setActivePart, yOffset = 0, isXRayEnabled }) {
-  // Pre-carga el modelo para una experiencia de usuario más fluida.
-  // Es una buena práctica llamar a esto aquí para que React se encargue de la gestión del caché.
+function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, setActivePart, yOffset = 0, isXRayEnabled, focusPoint, setFocusPoint, setCardPosition }) {
+  
+  const orbitRef = useRef();
+
+  useFrame((state) => {
+    if(orbitRef.current && Array.isArray(focusPoint)) {
+      const targetPosition = new THREE.Vector3(...focusPoint);
+      
+      orbitRef.current.target.lerp(targetPosition, 0.1);
+
+      orbitRef.current.update();
+    }
+  })
 
   return (
     <>
@@ -74,7 +90,7 @@ function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, set
         enablePan={false}
         maxDistance={5}
         minDistance={1}
-        target={[0, yOffset, 0]}
+        ref={orbitRef}
       />
 
       {/* Renderiza el modelo solo si la ruta es válida */}
@@ -86,6 +102,8 @@ function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, set
                       activePart={activePart}
                       setActivePart={setActivePart}
                       isXRayEnabled={isXRayEnabled}
+                      focusPoint={focusPoint}
+                      setFocusPoint={setFocusPoint}
                     />
       }
     </>

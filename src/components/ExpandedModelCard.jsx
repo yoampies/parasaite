@@ -6,11 +6,13 @@ import { model_mesh_details } from '../assets/constants';
 
 function ExpandedModelCard({isExpanded, setIsExpanded, modelPath, rotation}) {
 
-    const [activePart, setActivePart] = useState(null);
-    const [isXRayEnabled, setIsXRayEnabled] = useState(false);
-
     const ascarisCloseUp = modelPath === "/models/ascaris-lumbricoides_A.glb" ? [0, 0.5, 1] : [0, 0, 3];
     const yOffset = modelPath === "/models/ascaris-lumbricoides_A.glb" ? 0.3 : 0;
+    
+    const [activePart, setActivePart] = useState(null);
+    const [isXRayEnabled, setIsXRayEnabled] = useState(false);
+    const [focusPoint, setFocusPoint] = useState([0, yOffset, 0])
+    const [cardPosition, setCardPosition] = useState(null); 
 
     const parts = modelPath.split("/");
     const filename = parts.pop();
@@ -50,6 +52,9 @@ function ExpandedModelCard({isExpanded, setIsExpanded, modelPath, rotation}) {
                         setIsExpanded={setIsExpanded}
                         setActivePart={setActivePart}
                         isXRayEnabled={isXRayEnabled}
+                        focusPoint={focusPoint}
+                        setFocusPoint={setFocusPoint}
+                        setCardPosition={setCardPosition}
                     />
                 </Canvas>
                 <div className="w-1/3 bg-white p-8 flex flex-col justify-center">
