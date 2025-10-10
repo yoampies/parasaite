@@ -11,14 +11,27 @@ import PropTypes from 'prop-types';
 
 // Model.jsx
 
-const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, setActivePart }) => {
+const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, setActivePart, isXRayEnabled }) => {
     const { scene } = useGLTF(modelPath);
     const lastSelected = useRef();
+
+    const opacity = isXRayEnabled ? 0.2 : 1;
+    const color = isXRayEnabled ? "lightblue" : "white";
+    const transparent = opacity < 1 ? true : false;
+
+    scene.traverse((child) => {
+      if(child.isMesh){
+        child.material.color.set(color);
+        child.material.opacity = opacity;
+        child.material.transparent = transparent;
+        child.material.needsUpdate = true;
+      }
+    })
 
     const onPartSelect = (e) => {
         e.stopPropagation();
 
-        if (isExpanded) {
+        if (isExpanded && !isXRayEnabled) {
             // Lógica de selección básica (cuando está en el ExpandedCard)
             if (lastSelected.current) {
                 // Restauramos al color "original" (asumiendo que era blanco o similar)
@@ -46,7 +59,7 @@ const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, setActiv
  * @param {string} props.modelPath - La ruta al archivo de modelo 3D (.gltf o .glb).
  * @param {Array<number>} props.rotation - La rotación del modelo en el espacio 3D, en radianes [x, y, z].
  */
-function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, setActivePart, yOffset = 0 }) {
+function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, setActivePart, yOffset = 0, isXRayEnabled }) {
   // Pre-carga el modelo para una experiencia de usuario más fluida.
   // Es una buena práctica llamar a esto aquí para que React se encargue de la gestión del caché.
 
@@ -72,6 +85,7 @@ function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, set
                       setIsExpanded={setIsExpanded}
                       activePart={activePart}
                       setActivePart={setActivePart}
+                      isXRayEnabled={isXRayEnabled}
                     />
       }
     </>

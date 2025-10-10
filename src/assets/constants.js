@@ -572,7 +572,12 @@ export const model_mesh_details = {
             title: "Cola (Macho/Hembra)",
             description: "Forma curvada en el macho y recta en la hembra adulta.",
         },
-        "DEFAULT": { title: "Ascaris lumbricoides Adulto", description: "Haz clic en una parte del modelo para ver su función." }
+        "DEFAULT": { title: "Ascaris lumbricoides Adulto", description: "Haz clic en una parte del modelo para ver su función." },
+        // --- DETALLES DE RAYOS X (ADULTO) ---
+        "XRAY_DETAILS": {
+            title: "Sistemas Orgánicos Internos",
+            description: "Se revela el tubo digestivo completo (esófago, intestino) y las estructuras reproductivas (ovarios, útero) altamente enrolladas que ocupan gran parte de la cavidad corporal.",
+        }
     },
 
     "ascaris-lumbricoides_H": {
@@ -583,6 +588,11 @@ export const model_mesh_details = {
         "DEFAULT": { 
             title: "Huevo de Ascaris lumbricoides", 
             description: "Modelo del huevo. En la vista de Rayos X, se observarán las múltiples capas internas (albúmina, quitina) y el embrión." 
+        },
+        // --- DETALLES DE RAYOS X (HUEVO) ---
+        "XRAY_DETAILS": {
+            title: "Capas de Protección y Embrión",
+            description: "Se aprecian las tres capas esenciales: la capa vitelina (lípidos), la capa de quitina (estructura) y el contenido celular interno o el embrión en desarrollo.",
         }
     },
 
@@ -606,7 +616,12 @@ export const model_mesh_details = {
             title: "Cola Filiforme",
             description: "La cola larga y afilada, distintiva del oxiuro (pinworm).",
         },
-        "DEFAULT": { title: "Enterobius vermicularis Adulto", description: "Haz clic en una parte del modelo para ver su función." }
+        "DEFAULT": { title: "Enterobius vermicularis Adulto", description: "Haz clic en una parte del modelo para ver su función." },
+        // --- DETALLES DE RAYOS X (ADULTO) ---
+        "XRAY_DETAILS": {
+            title: "Detalles del Aparato Reproductor",
+            description: "En la hembra adulta, el modo Rayos X destaca el útero, que a menudo está completamente distendido (lleno) con miles de huevos maduros listos para la oviposición perianal.",
+        }
     },
 
     "enterobius-vermicularis_H": {
@@ -617,6 +632,11 @@ export const model_mesh_details = {
         "DEFAULT": { 
             title: "Huevo de Enterobius vermicularis", 
             description: "Modelo del huevo. En la vista de Rayos X, se apreciará la larva en su interior, ya que se excretan larvados." 
+        },
+        // --- DETALLES DE RAYOS X (HUEVO) ---
+        "XRAY_DETAILS": {
+            title: "Larva en su Interior",
+            description: "La vista Rayos X muestra la larva completamente desarrollada, enrollada dentro del huevo. Esto confirma que son infecciosos inmediatamente después de ser depositados.",
         }
     },
     
@@ -632,7 +652,12 @@ export const model_mesh_details = {
             title: "Extremo Posterior Grueso (Mango)",
             description: "La parte más gruesa del cuerpo, donde se encuentran los principales órganos digestivos y reproductivos.",
         },
-        "DEFAULT": { title: "Trichuris trichiura Adulto", description: "Haz clic en una parte del modelo para ver su función." }
+        "DEFAULT": { title: "Trichuris trichiura Adulto", description: "Haz clic en una parte del modelo para ver su función." },
+        // --- DETALLES DE RAYOS X (ADULTO) ---
+        "XRAY_DETAILS": {
+            title: "Esófago Esticosoma y Órganos",
+            description: "Se observa el esticosoma, una estructura esofágica glandular distintiva que secreta enzimas, clave para su fijación en el intestino grueso. También se ven los órganos reproductivos en la parte gruesa.",
+        }
     },
 
     "trichuris-trichiura_H": {
@@ -643,6 +668,11 @@ export const model_mesh_details = {
         "DEFAULT": { 
             title: "Huevo de Trichuris trichiura", 
             description: "Modelo del huevo. En la vista de Rayos X, destacará el embrión inmaduro y el área de los tapones polares." 
+        },
+        // --- DETALLES DE RAYOS X (HUEVO) ---
+        "XRAY_DETAILS": {
+            title: "Célula Inmadura y Tapones Polares",
+            description: "La vista Rayos X muestra el contenido celular inmaduro y la densidad de los tapones polares en ambos extremos, que sellan la cáscara para su protección ambiental.",
         }
     },
 
@@ -658,7 +688,12 @@ export const model_mesh_details = {
             title: "Cuerpo Adulto",
             description: "El cuerpo en forma de 'C' o 'S' invertida, donde tiene lugar la digestión y la reproducción.",
         },
-        "DEFAULT": { title: "Necator americanus Adulto", description: "Haz clic en una parte del modelo para ver su función." }
+        "DEFAULT": { title: "Necator americanus Adulto", description: "Haz clic en una parte del modelo para ver su función." },
+        // --- DETALLES DE RAYOS X (ADULTO) ---
+        "XRAY_DETAILS": {
+            title: "Bursa Copulatriz y Órganos",
+            description: "En el macho, la vista resalta la Bursa Copulatriz con sus rayos distintivos, usada para el acoplamiento. En ambos sexos, se aprecian las estructuras internas clave para la succión de sangre.",
+        }
     },
 
     "necator-americanus_H": {
@@ -669,13 +704,17 @@ export const model_mesh_details = {
         "DEFAULT": { 
             title: "Huevo de Necator americanus", 
             description: "Modelo del huevo. En la vista de Rayos X, se apreciará el espacio claro entre la capa exterior y el contenido celular." 
+        },
+        // --- DETALLES DE RAYOS X (HUEVO) ---
+        "XRAY_DETAILS": {
+            title: "Contenido Celular y Espacio Perivitellino",
+            description: "La vista Rayos X destaca la clara división celular interna (segmentación) y el notable espacio perivitellino entre la cáscara y el contenido celular.",
         }
     },
 
     // ====================================================================
-    // 5. GIARDIA DUODENALIS (Quiste)
+    // 5. GIARDIA DUODENALIS (Trofozoíto y Quiste)
     // ====================================================================
-    // Giardia no tiene un modelo 'Adulto' sino un Trofozoíto (forma activa)
     "giardia-duodenalis_A": { 
         "Nucleo_mesh": {
             title: "Núcleos",
@@ -697,7 +736,12 @@ export const model_mesh_details = {
             title: "Flagelos",
             description: "Ocho apéndices filamentosos (cuatro pares) que permiten el movimiento rápido y activo del trofozoíto en el intestino.",
         },
-        "DEFAULT": { title: "Giardia duodenalis Trofozoíto", description: "Haz clic en una parte para ver su función detallada." }
+        "DEFAULT": { title: "Giardia duodenalis Trofozoíto", description: "Haz clic en una parte para ver su función detallada." },
+        // --- DETALLES DE RAYOS X (TROFOZOÍTO) ---
+        "XRAY_DETAILS": {
+            title: "Estructuras Internas (Dorsal)",
+            description: "La vista Rayos X revela los dos núcleos y el axostilo que corre por el centro, proporcionando una vista de las estructuras de soporte internas ocultas bajo el cuerpo.",
+        }
     },
 
     "giardia-duodenalis_H": { 
@@ -708,6 +752,11 @@ export const model_mesh_details = {
         "DEFAULT": { 
             title: "Quiste de Giardia duodenalis", 
             description: "Modelo del quiste. En la vista de Rayos X, se observarán las estructuras internas duplicadas (núcleos y axostilo) listas para la exquistación." 
+        },
+        // --- DETALLES DE RAYOS X (QUISTE) ---
+        "XRAY_DETAILS": {
+            title: "Estructuras Internas Duplicadas",
+            description: "Se ven los cuatro núcleos (a diferencia de los dos del trofozoíto) y las estructuras duplicadas (axostilo y cuerpos medios), indicando que el parásito está listo para la división al salir del quiste.",
         }
     }
 };
