@@ -1,8 +1,9 @@
 import { OrbitControls, useGLTF, Html } from '@react-three/drei';
-import React, { useRef, memo, useEffect } from 'react';
+import React, { useRef, memo, useEffect, Suspense } from 'react';
 import PropTypes from 'prop-types';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from "three";
+import ModelLoader from "./ModelLoader.jsx"
 
 /**
  * @description Un componente auxiliar para cargar dinámicamente cualquier modelo GLTF
@@ -133,33 +134,32 @@ function Model({ modelPath, rotation, isExpanded, setIsExpanded, activePart, set
 
   return (
     <>
-      {/* Luces para iluminar el modelo */}
+      {/* Luces y OrbitControls se quedan fuera de Suspense */}
       <ambientLight intensity={1} color="#fafafa" />
       <directionalLight position={[0, 0, 5]} intensity={7} />
-
-      {/* Controles de órbita para la interacción del usuario */}
       <OrbitControls
         enablePan={false}
         maxDistance={5}
         minDistance={1}
         ref={orbitRef}
         target={[0, yOffset, 0]} 
-
       />
 
-      {/* Renderiza el modelo solo si la ruta es válida */}
-      {modelPath && <DynamicModel
-                      modelPath={modelPath} 
-                      rotation={rotation} 
-                      isExpanded={isExpanded}
-                      setIsExpanded={setIsExpanded}
-                      activePart={activePart}
-                      setActivePart={setActivePart}
-                      isXRayEnabled={isXRayEnabled}
-                      focusPoint={focusPoint}
-                      setFocusPoint={setFocusPoint}
-                    />
-      }
+      {/* 2. Envuelve tu modelo con Suspense */}
+      <Suspense fallback={<ModelLoader />}>
+        {/* Renderiza el modelo solo si la ruta es válida */}
+        {modelPath && <DynamicModel
+            modelPath={modelPath} 
+            rotation={rotation} 
+            isExpanded={isExpanded}
+            setIsExpanded={setIsExpanded}
+            activePart={activePart}
+            setActivePart={setActivePart}
+            isXRayEnabled={isXRayEnabled}
+            focusPoint={focusPoint}
+            setFocusPoint={setFocusPoint}
+        />}
+      </Suspense>
     </>
   );  
 }

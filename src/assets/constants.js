@@ -43,131 +43,131 @@ import cdvTrichurisMEgg from "/images/cdv-trichuris-m-egg.jpg";
 
 // Helper function to generate content from detected parasites
 const generateContent = (detectedParasites) => {
-  if (detectedParasites && detectedParasites.length > 0) {
-    const parasiteInfo = detectedParasites.map(p => p.label).join(', ');
-    const avgConfidence = detectedParasites.reduce((sum, p) => sum + p.value, 0) / detectedParasites.length;
-    return `Detectado: ${parasiteInfo}, Confianza Promedio: ${Math.round(avgConfidence)}%`;
-  }
-  return 'Detectado: No se encontraron parásitos';
+  if (detectedParasites && detectedParasites.length > 0) {
+    const parasiteInfo = detectedParasites.map(p => p.label).join(', ');
+    const avgConfidence = detectedParasites.reduce((sum, p) => sum + p.value, 0) / detectedParasites.length;
+    return `Detectado: ${parasiteInfo}, Confianza Promedio: ${Math.round(avgConfidence)}%`;
+  }
+  return 'Detectado: No se encontraron parásitos';
 };
 
 
 // History.jsx
 export const recentAnalyses = [
-    {
-        id: 1,
-        date: '2024-01-15 10:30 AM',
-        content: 'Detectado: Ascaris lumbricoides (3), Confianza Promedio: 95%',
-        imgURL: analysis1,
-        detectedParasites: [
-            { label: 'Ascaris lumbricoides', value: 95 },
-            { label: 'Trichuris trichiura', value: 89 },
-        ],
-    },
-    {
-        id: 2,
-        date: '2024-01-14 02:45 PM',
-        content: 'Detectado: Giardia duodenalis (2), Confianza Promedio: 88%',
-        imgURL: analysis2,
-        detectedParasites: [
-            { label: 'Giardia duodenalis', value: 88 },
-        ],
-    },
-    {
-        id: 3,
-        date: '2024-01-13 09:15 AM',
-        content: 'Detectado: Enterobius vermicularis (1), Confianza Promedio: 75%',
-        imgURL: analysis3,
-        detectedParasites: [
-            { label: 'Enterobius vermicularis', value: 75 },
-        ],
-    },
-    {
-        id: 4,
-        date: '2024-01-12 04:00 PM',
-        content: 'Detectado: Trichuris trichiura (4), Confianza Promedio: 92%',
-        imgURL: analysis4,
-        detectedParasites: [
-            { label: 'Trichuris trichiura', value: 92 },
-        ],
-    },
-    {
-        id: 5,
-        date: '2024-01-11 11:00 AM',
-        content: 'Detectado: No se encontraron parásitos, Confianza Promedio: 99%',
-        imgURL: analysis5,
-        detectedParasites: [],
-    },
+    {
+        id: 1,
+        date: '2024-01-15 10:30 AM',
+        content: 'Detectado: Ascaris lumbricoides (3), Confianza Promedio: 95%',
+        imgURL: analysis1,
+        detectedParasites: [
+            { label: 'Ascaris lumbricoides', value: 95 },
+            { label: 'Trichuris trichiura', value: 89 },
+        ],
+    },
+    {
+        id: 2,
+        date: '2024-01-14 02:45 PM',
+        content: 'Detectado: Giardia duodenalis (2), Confianza Promedio: 88%',
+        imgURL: analysis2,
+        detectedParasites: [
+            { label: 'Giardia duodenalis', value: 88 },
+        ],
+    },
+    {
+        id: 3,
+        date: '2024-01-13 09:15 AM',
+        content: 'Detectado: Enterobius vermicularis (1), Confianza Promedio: 75%',
+        imgURL: analysis3,
+        detectedParasites: [
+            { label: 'Enterobius vermicularis', value: 75 },
+        ],
+    },
+    {
+        id: 4,
+        date: '2024-01-12 04:00 PM',
+        content: 'Detectado: Trichuris trichiura (4), Confianza Promedio: 92%',
+        imgURL: analysis4,
+        detectedParasites: [
+            { label: 'Trichuris trichiura', value: 92 },
+        ],
+    },
+    {
+        id: 5,
+        date: '2024-01-11 11:00 AM',
+        content: 'Detectado: No se encontraron parásitos, Confianza Promedio: 99%',
+        imgURL: analysis5,
+        detectedParasites: [],
+    },
 ];
 
 export const parasiteTypes = [
-  'Ascaris lumbricoides',
-  'Enterobius vermicularis',
-  'Trichuris trichiura',
-  'Necator americanus',
-  'Giardia duodenalis',
+  'Ascaris lumbricoides',
+  'Enterobius vermicularis',
+  'Trichuris trichiura',
+  'Necator americanus',
+  'Giardia duodenalis',
 ];
 
 export const months = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
 export const feedbackStatus = ['En Progreso', 'Revisado', 'Completado'];
 
 // Scanner.jsx
 export const possibleParasites = [
-  'Giardia duodenalis',
-  'Entamoeba histolytica',
-  'Cryptosporidium parvum',
-  'Cyclospora cayetanensis',
-  'Trichomonas vaginalis',
-  'Ascaris lumbricoides',
-  'Strongyloides stercoralis',
-  'Ancylostoma duodenale',
-  'Enterobius vermicularis',
-  'Toxoplasma gondii',
+  'Giardia duodenalis',
+  'Entamoeba histolytica',
+  'Cryptosporidium parvum',
+  'Cyclospora cayetanensis',
+  'Trichomonas vaginalis',
+  'Ascaris lumbricoides',
+  'Strongyloides stercoralis',
+  'Ancylostoma duodenale',
+  'Enterobius vermicularis',
+  'Toxoplasma gondii',
 ];
 
 export const recentImages = [
-    {
-        id: 1,
-        imgURL: recent1,
-        date: '2024-01-01 03:00 PM',
-        fileName: 'sample_image_1.png',
-        detectedParasites: [
-            { label: 'Ascaris lumbricoides', value: 95 },
-            { label: 'Trichuris trichiura', value: 89 },
-        ],
-        content: generateContent([
-            { label: 'Ascaris lumbricoides', value: 95 },
-            { label: 'Trichuris trichiura', value: 89 },
-        ]),
-    },
-    {
-        id: 2,
-        imgURL: recent2,
-        date: '2024-01-02 01:00 AM',
-        fileName: 'sample_image_2.png',
-        detectedParasites: [
-            { label: 'Giardia duodenalis', value: 88 },
-        ],
-        content: generateContent([
-            { label: 'Giardia duodenalis', value: 88 },
-        ]),
-    },
-    {
-        id: 3,
-        imgURL: recent3,
-        date: '2024-01-03 12:00 M',
-        fileName: 'sample_image_3.png',
-        detectedParasites: [
-            { label: 'Enterobius vermicularis', value: 75 },
-        ],
-        content: generateContent([
-            { label: 'Enterobius vermicularis', value: 75 },
-        ]),
-    },
+    {
+        id: 1,
+        imgURL: recent1,
+        date: '2024-01-01 03:00 PM',
+        fileName: 'sample_image_1.png',
+        detectedParasites: [
+            { label: 'Ascaris lumbricoides', value: 95 },
+            { label: 'Trichuris trichiura', value: 89 },
+        ],
+        content: generateContent([
+            { label: 'Ascaris lumbricoides', value: 95 },
+            { label: 'Trichuris trichiura', value: 89 },
+        ]),
+    },
+    {
+        id: 2,
+        imgURL: recent2,
+        date: '2024-01-02 01:00 AM',
+        fileName: 'sample_image_2.png',
+        detectedParasites: [
+            { label: 'Giardia duodenalis', value: 88 },
+        ],
+        content: generateContent([
+            { label: 'Giardia duodenalis', value: 88 },
+        ]),
+    },
+    {
+        id: 3,
+        imgURL: recent3,
+        date: '2024-01-03 12:00 M',
+        fileName: 'sample_image_3.png',
+        detectedParasites: [
+            { label: 'Enterobius vermicularis', value: 75 },
+        ],
+        content: generateContent([
+            { label: 'Enterobius vermicularis', value: 75 },
+        ]),
+    },
 ];
 
 // Library.jsx
