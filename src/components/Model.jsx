@@ -17,34 +17,82 @@ const DynamicModel = ({ modelPath, rotation, isExpanded, setIsExpanded, activePa
     const { scene } = useGLTF(modelPath);
     const lastSelected = useRef();
 
-    useEffect(() => {
-      const opacity = isXRayEnabled ? 0.05 : 1;
-      const color = isXRayEnabled ? "#000000" : "white";
-      const transparent = opacity < 1 ? true : false;
+    // Almacenamos el estado original del material y el target de la animación.
+    const materialRefs = useRef({}); 
+    // Inicializamos el target en el estado 'normal' (opacidad 1, color blanco)
+    const animationTarget = useRef({ opacity: 1, color: new THREE.Color('white') });
 
-      scene.traverse((child) => {
-        if(child.isMesh){
-          child.material.color.set(color);
-          child.material.opacity = opacity;
-          child.material.transparent = transparent;
-          child.material.needsUpdate = true;
+    // Se ejecuta cada vez que isXRayEnabled cambia.
+    useEffect(() => {
+        // Define los valores objetivo para la transición
+        const targetOpacity = isXRayEnabled ? 0.05 : 1;
+        const targetColor = isXRayEnabled ? new THREE.Color('#000000') : new THREE.Color('white');
+        
+        // Almacena el target en la referencia
+        animationTarget.current.opacity = targetOpacity;
+        animationTarget.current.color.copy(targetColor);
+
+        // Si los materiales aún no están inicializados (solo la primera vez), haz la copia inicial
+        if (Object.keys(materialRefs.current).length === 0) {
+            scene.traverse((child) => {
+                if (child.isMesh) {
+                    // Copiamos y almacenamos referencias para trabajar con ellos en useFrame
+                    materialRefs.current[child.uuid] = {
+                        originalColor: child.material.color.clone(),
+                        originalOpacity: child.material.opacity,
+                    };
+                    child.material.transparent = true; // Fundamental para que opacity < 1 funcione
+                    child.material.needsUpdate = true;
+                }
+            });
         }
-      })
-    }, [activePart, isXRayEnabled])
+    }, [isXRayEnabled, scene]); // Depende solo de si el modo Rayos X está activo
+
+    // state = información de Three.js (cámara, tiempo, etc.), delta = tiempo desde el último fotograma
+    useFrame((state, delta) => {
+        // Usamos delta para hacer la animación independiente de la velocidad de fotogramas (FPS)
+        // 5 es la velocidad de transición (más alto = más rápido)
+        const speed = 5 * delta; 
+        
+        scene.traverse((child) => {
+            if (child.isMesh && materialRefs.current[child.uuid]) {
+                const material = child.material;
+                const ref = materialRefs.current[child.uuid]; // Acceso a nuestra referencia
+                const target = animationTarget.current;
+                
+                // Si hay un color de anulación (override), lo usamos inmediatamente.
+                const finalTargetColor = ref.overrideColor || target.color; 
+                
+                // Interpolación (LERP) del color: usa finalTargetColor
+                material.color.lerp(finalTargetColor, speed); 
+                
+                // Interpolación de la opacidad (esto sigue igual)
+                material.opacity = THREE.MathUtils.lerp(material.opacity, target.opacity, speed);
+                
+                material.needsUpdate = true;
+            }
+        });
+    })
 
     const onPartSelect = (e) => {
         e.stopPropagation();
 
         if (isExpanded && !isXRayEnabled) {
-            // Lógica de selección básica (cuando está en el ExpandedCard)
-            setFocusPoint(e.point.toArray());
+            // ... (lógica existente para setFocusPoint)
 
+            // --- 1. Restaurar el anterior (si existe) ---
             if (lastSelected.current) {
-                // Restauramos al color "original" (asumiendo que era blanco o similar)
-                lastSelected.current.material.color.set('white'); 
+                // Remove the override color so it goes back to animating
+                materialRefs.current[lastSelected.current.uuid].overrideColor = null; 
             }
+
+            // --- 2. Aplicar el nuevo color y establecer el override ---
             e.object.material = e.object.material.clone();
             e.object.material.color.set('cyan');
+            
+            // ✨ Almacena el color de anulación (cyan)
+            materialRefs.current[e.object.uuid].overrideColor = new THREE.Color('cyan');
+            
             lastSelected.current = e.object;
             setActivePart(e.object.name);
         } else {
