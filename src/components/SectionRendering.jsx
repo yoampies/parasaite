@@ -44,7 +44,8 @@ function SectionRendering({ sections, parasiteName, scrollPositionRef, isExpande
 
             {/* Renderizado condicional: si hay una ruta de modelo 3D, muestra el modelo */}
             {modelPath && !isExpanded && (
-              <div className="w-full h-[500px] p-4">
+              <div className="w-full h-[500px] px-4 pt-2 pb-4">
+                <p className='text-gray-500 text-sm'>¡Haz click sobre el parásito para verlo mejor!</p>
                 <ModelCanvas 
                   modelPath={modelPath} 
                   rotation={parasiteRotation}
