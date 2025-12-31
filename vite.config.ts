@@ -1,4 +1,5 @@
-import { defineConfig } from 'vite';
+/// <reference types="vitest" />
+import { defineConfig } from 'vitest/config'; 
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath } from 'url';
@@ -25,7 +26,7 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Elevamos el límite para cubrir tus modelos 3D y GeoJSON pesados
+        // Aumentado a 10MB para soportar tus modelos 3D y GeoJSON pesados
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, 
         globPatterns: ['**/*.{js,css,html,ico,png,svg,glb,json}']
       }
@@ -39,7 +40,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        // Dividimos las librerías grandes en trozos separados para mejorar la carga
+        // División de chunks para optimizar la carga inicial
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
@@ -48,7 +49,11 @@ export default defineConfig({
         }
       }
     },
-    // Opcional: aumenta un poco el límite de advertencia para silenciarla tras el split
     chunkSizeWarningLimit: 1000, 
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
   }
 });

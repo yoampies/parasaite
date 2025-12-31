@@ -2,6 +2,8 @@ import { useState, useEffect, RefObject } from 'react';
 import { gsap } from 'gsap';
 import { IAnalysis, WorkerPayload, IBoundingBox } from '../types';
 
+import AnalysisWorker from '../worker?worker';
+
 interface WorkerResponse {
   results: IBoundingBox[];
 }
@@ -19,7 +21,6 @@ const useImageAnalysisWorker = (
   const [detectedParasites, setDetectedParasites] = useState<IBoundingBox[]>([]);
 
   useEffect(() => {
-    // 1. Guardias de seguridad para evitar errores de nulidad
     const img = imgRef.current;
     const progressBar = progressBarRef.current;
     const canvas = canvasRef.current;
@@ -30,10 +31,7 @@ const useImageAnalysisWorker = (
     }
 
     setIsLoading(true);
-
-    // 2. Inicialización del Web Worker
-    // Nota: Usamos la sintaxis de URL de Vite/Webpack para compatibilidad con TS
-    const worker = new Worker(new URL('../worker.ts', import.meta.url));
+    const worker = new AnalysisWorker();
 
     const imgData: WorkerPayload = {
       imageWidth: img.naturalWidth,
@@ -43,7 +41,6 @@ const useImageAnalysisWorker = (
 
     worker.postMessage(imgData);
 
-    // 3. Animación de carga con GSAP
     const progressTween = gsap.fromTo(
       progressBar,
       { width: '0%' },
@@ -57,20 +54,18 @@ const useImageAnalysisWorker = (
       }
     );
 
-    // 4. Manejo de respuesta del Worker
     worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
       const results = e.data.results;
       setDetectedParasites(results);
       drawCanvas(results);
 
-      // Animación de feedback visual al terminar
+      // Feedback visual
       const zoomTweens = gsap.timeline();
       zoomTweens
         .to(scannerContainer, { scale: 1.02, duration: 0.2 })
         .to(scannerContainer, { scale: 1, duration: 0.2 });
     };
 
-    // 5. Cleanup: Fundamental para evitar memory leaks y procesos zombies
     return () => {
       worker.terminate();
       progressTween.kill();
