@@ -760,3 +760,16 @@ export const model_mesh_details: Record<string, IModelDetails> = {
         }
     }
 };
+
+export const PARASITE_MODELS = {
+  ASCARIS_A: "/models/ascaris-lumbricoides_A.glb",
+  ASCARIS_H: "/models/ascaris-lumbricoides_H.glb",
+  ENTEROBIUS_A: "/models/enterobius-vermicularis_A.glb",
+  ENTEROBIUS_H: "/models/enterobius-vermicularis_H.glb",
+  GIARDIA_A: "/models/giardia-duodenalis_A.glb",
+  GIARDIA_H: "/models/giardia-duodenalis_H.glb",
+  NECATOR_A: "/models/necator-americanus_A.glb",
+  NECATOR_H: "/models/necator-americanus_H.glb",
+  TRICHURIS_A: "/models/trichuris-trichiura_A.glb",
+  TRICHURIS_H: "/models/trichuris-trichiura_H.glb",
+};
