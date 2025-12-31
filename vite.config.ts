@@ -25,7 +25,8 @@ export default defineConfig({
         ]
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        // Elevamos el límite para cubrir tus modelos 3D y GeoJSON pesados
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, 
         globPatterns: ['**/*.{js,css,html,ico,png,svg,glb,json}']
       }
     })
@@ -35,4 +36,19 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Dividimos las librerías grandes en trozos separados para mejorar la carga
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
+          'vendor-d3': ['d3'],
+          'vendor-gsap': ['gsap']
+        }
+      }
+    },
+    // Opcional: aumenta un poco el límite de advertencia para silenciarla tras el split
+    chunkSizeWarningLimit: 1000, 
+  }
 });
