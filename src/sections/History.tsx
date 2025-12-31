@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, CSSProperties } from 'react';
+import { useMemo, CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useHistoryStore } from '../hooks/UseHistoryStore';
 
 // Components
 import Navbar from '../components/Navbar';
@@ -10,8 +11,8 @@ import ConfidenceLvlFilter from '../components/ConfidenceLvlFilter';
 import CalendarFilter from '../components/CalendarFilter';
 import ButtonFilter from '../components/ButtonFilter';
 
-// Constants, Data & Types
-import { recentAnalyses, parasiteTypes } from '../assets/constants';
+// Constants & Types
+import { parasiteTypes } from '../assets/constants';
 import { IAnalysis, FilterConfig } from '../types';
 import 'rc-slider/assets/index.css';
 
@@ -22,48 +23,31 @@ const filters: FilterConfig[] = [
   { component: ButtonFilter, title: 'Filtrar por Estado de Retroalimentación' },
 ];
 
-/**
- * @description Página de Historial Médica.
- * Centraliza los análisis realizados, permitiendo auditoría y filtrado clínico.
- */
 function History() {
-  const [displayedAnalyses, setDisplayedAnalyses] = useState<IAnalysis[]>([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Recuperación segura de localStorage
-    const storedData = localStorage.getItem('recentAnalyses');
-    const storedAnalyses: IAnalysis[] = storedData ? JSON.parse(storedData) : [];
+  // Consumimos el Store de Zustand
+  const { analyses, searchQuery, setSearchQuery } = useHistoryStore();
 
-    // Merge de datos estáticos y dinámicos eliminando duplicados por ID
-    const uniqueAnalyses = [...recentAnalyses, ...storedAnalyses].reduce(
-      (acc: IAnalysis[], current) => {
-        const exists = acc.find((item) => item.id === current.id);
-        if (!exists) {
-          return acc.concat([current]);
-        }
-        return acc;
-      },
-      []
-    );
-
-    setDisplayedAnalyses(uniqueAnalyses);
-  }, []);
-
-  // Memorización del ordenamiento para evitar cálculos en cada re-render
-  const sortedAnalyses = useMemo(() => {
-    return [...displayedAnalyses].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-  }, [displayedAnalyses]);
+  // Lógica de filtrado y ordenamiento centralizada
+  const filteredAndSortedAnalyses = useMemo(() => {
+    return analyses
+      .filter((a) => {
+        const matchesSearch =
+          a.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          a.date.includes(searchQuery);
+        // Aquí se pueden integrar fácilmente los otros filtros del store
+        return matchesSearch;
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [analyses, searchQuery]);
 
   const handleCardClick = (analysis: IAnalysis) => {
     navigate(`/scanner-results/${analysis.id}`, { state: { analysis } });
   };
 
-  // Definición de estilos con tipado para propiedades personalizadas de CSS (CSS Variables)
   const containerStyle: CSSProperties = {
-    // @ts-expect-error: Justificación breve (ej: librería externa sin tipos)
+    // @ts-expect-error: CSS Variable personalizada para el diseño del checkbox
     '--checkbox-tick-svg': `url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='rgb(16,24,22)' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e")`,
     fontFamily: 'Inter, "Noto Sans", sans-serif',
   };
@@ -80,7 +64,7 @@ function History() {
           <aside className="layout-content-container flex flex-col w-80">
             <Search
               placeholder="Buscar por fecha, hora o parásito"
-              onSearch={(val) => console.log('Buscando:', val)}
+              onSearch={setSearchQuery} // Actualiza directamente el estado global
             />
             {filters.map((Filter, index) => (
               <Filter.component key={`${Filter.title}-${index}`} {...Filter} />
@@ -105,8 +89,8 @@ function History() {
               <h2 className="text-[#101816] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">
                 Análisis Recientes
               </h2>
-              {sortedAnalyses.length > 0 ? (
-                sortedAnalyses.map((analysis) => (
+              {filteredAndSortedAnalyses.length > 0 ? (
+                filteredAndSortedAnalyses.map((analysis) => (
                   <Card
                     key={analysis.id}
                     title={`Análisis del ${analysis.date}`}
@@ -116,7 +100,9 @@ function History() {
                   />
                 ))
               ) : (
-                <p className="px-4 text-[#5e8d81] italic">No hay análisis registrados todavía.</p>
+                <p className="px-4 text-[#5e8d81] italic">
+                  No hay análisis que coincidan con la búsqueda.
+                </p>
               )}
             </section>
           </main>
