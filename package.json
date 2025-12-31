@@ -47,25 +47,16 @@
     "postcss": "^8.5.6",
     "prettier": "^3.7.4",
     "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.0",
     "vite": "^7.1.0"
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/vite-env.d.ts"
-  ],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    }
-  ],
   "lint-staged": {
-  "src/**/*.{ts,tsx,js,jsx}": [
-    "eslint --fix",
-    "prettier --write"
-  ],
-  "src/**/*.{css,scss,md}": [
-    "prettier --write"
-  ]
-}
+    "src/**/*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "src/**/*.{css,scss,md}": [
+      "prettier --write"
+    ]
+  }
 }
