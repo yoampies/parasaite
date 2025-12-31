@@ -10,10 +10,7 @@ import reactCompiler from 'eslint-plugin-react-compiler'
 export default tseslint.config(
   { ignores: ['dist', 'node_modules', 'public/s_models'] },
   {
-    extends: [
-      js.configs.recommended, 
-      ...tseslint.configs.recommended,
-    ],
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
@@ -32,18 +29,17 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       ...react.configs.recommended.rules,
-      ...react.configs['jsx-runtime'].rules, 
+      ...react.configs['jsx-runtime'].rules,
       'react-compiler/react-compiler': 'error',
+      'react/prop-types': 'off',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
       ],
-      'react/prop-types': 'off',
-      'react/no-deprecated': 'error',
     },
     settings: {
       react: { version: 'detect' }
     }
   },
-  eslintConfigPrettier 
+  eslintConfigPrettier
 )

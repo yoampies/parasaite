@@ -1,5 +1,5 @@
 dist
 node_modules
-public/s_models
+public/s_models/
 *.glb
 *.json
