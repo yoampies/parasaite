@@ -1,6 +1,7 @@
-// src/types/index.ts
-import { ReactNode, Dispatch, SetStateAction, MutableRefObject } from 'react'
-import * as THREE from "three";
+import { ReactNode, Dispatch, SetStateAction, MutableRefObject } from 'react';
+import * as THREE from 'three';
+
+// ... (Mantenemos todas las interfaces anteriores iguales hasta FilterConfig) ...
 
 export interface IDetectedParasite {
   label: string;
@@ -137,7 +138,7 @@ export interface DynamicModelProps {
   isExpanded: boolean;
   setIsExpanded: (val: boolean) => void;
   activePart: string | null;
-  setActivePart: Dispatch<SetStateAction<string | null>>; 
+  setActivePart: Dispatch<SetStateAction<string | null>>;
   isXRayEnabled: boolean;
   setFocusPoint: Dispatch<SetStateAction<[number, number, number] | null>>;
 }
@@ -231,6 +232,7 @@ export interface WorkerPayload {
 }
 
 export interface FilterConfig {
+  // Corrección: Usamos 'any' porque los filtros tienen props muy variados entre sí
   component: React.ComponentType<any>;
   title: string;
   options?: string[];
@@ -255,4 +257,3 @@ export interface IBoundingBox {
   height: number;
   detectedParasites: IDetectedParasite[];
 }
-

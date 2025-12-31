@@ -1,4 +1,4 @@
-import React, { useState, useMemo, ChangeEvent, FormEvent, CSSProperties } from 'react';
+import { useState, useMemo, ChangeEvent, FormEvent, CSSProperties } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 // Componentes
@@ -30,13 +30,13 @@ const ScannerFeedback = () => {
   // 1. Búsqueda memorizada y segura del análisis
   const analysis = useMemo<IAnalysis | undefined>(() => {
     if (!analysisId) return undefined;
-    
+
     const stored = localStorage.getItem('recentAnalyses');
     const storedAnalyses: IAnalysis[] = stored ? JSON.parse(stored) : [];
-    
+
     return (
-      storedAnalyses.find(a => a.id.toString() === analysisId) || 
-      recentAnalyses.find(a => a.id.toString() === analysisId)
+      storedAnalyses.find((a) => a.id.toString() === analysisId) ||
+      recentAnalyses.find((a) => a.id.toString() === analysisId)
     );
   }, [analysisId]);
 
@@ -61,20 +61,20 @@ const ScannerFeedback = () => {
     e.preventDefault();
 
     // Log estructurado para integración futura con API
-    console.log("Feedback clínico enviado:", {
+    console.log('Feedback clínico enviado:', {
       analysisId: analysis.id,
       timestamp: new Date().toISOString(),
       feedbackType: selectedFeedback,
       message: feedbackMessage,
     });
-    
+
     alert('¡Gracias! Tu feedback ayuda a mejorar la precisión diagnóstica.');
     navigate('/history');
   };
 
   // Tipado de variables CSS personalizadas
   const dynamicStyles: CSSProperties = {
-    //@ts-ignore - Propiedad personalizada de CSS
+    // @ts-expect-error: Justificación breve (ej: librería externa sin tipos)
     '--radio-dot-svg': radioDotSvg,
   };
 
@@ -92,19 +92,20 @@ const ScannerFeedback = () => {
                 Feedback del Análisis: {analysis.date}
               </h2>
               <p className="text-[#5e8d81] text-base font-normal leading-normal pb-3 pt-1 px-4">
-                Tus observaciones permiten que la red neuronal aprenda de casos atípicos o errores de clasificación morfológica.
+                Tus observaciones permiten que la red neuronal aprenda de casos atípicos o errores
+                de clasificación morfológica.
               </p>
             </header>
-            
+
             <form onSubmit={handleFeedbackSubmit} className="mt-4">
               <h3 className="text-[#101816] text-lg font-bold leading-tight tracking-[-0.015em] px-4 pb-2 pt-4">
                 Categoría del Error
               </h3>
-              
+
               <div className="flex flex-col gap-3 p-4">
                 {FEEDBACK_OPTIONS.map((option) => (
-                  <label 
-                    key={option.id} 
+                  <label
+                    key={option.id}
                     className="flex items-center gap-4 rounded-lg border border-solid border-[#dae7e3] p-[15px] cursor-pointer hover:bg-[#f0f5f4] transition-colors has-[input:checked]:border-[#101816] has-[input:checked]:bg-[#f0f5f4]"
                   >
                     <input
@@ -113,10 +114,14 @@ const ScannerFeedback = () => {
                       name="feedback-type"
                       value={option.id}
                       checked={selectedFeedback === option.id}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => setSelectedFeedback(e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setSelectedFeedback(e.target.value)
+                      }
                     />
                     <div className="flex grow flex-col">
-                      <p className="text-[#101816] text-sm font-medium leading-normal">{option.label}</p>
+                      <p className="text-[#101816] text-sm font-medium leading-normal">
+                        {option.label}
+                      </p>
                     </div>
                   </label>
                 ))}
@@ -130,7 +135,9 @@ const ScannerFeedback = () => {
                   placeholder="Ej: El parásito identificado como Ascaris lumbricoides presenta características más compatibles con Strongyloides stercoralis..."
                   className="form-input flex w-full min-w-0 resize-none overflow-hidden rounded-lg text-[#101816] focus:outline-0 focus:ring-2 focus:ring-[#00c795] border border-[#dae7e3] bg-white min-h-36 placeholder:text-[#5e8d81]/60 p-[15px] text-base font-normal leading-normal transition-shadow"
                   value={feedbackMessage}
-                  onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setFeedbackMessage(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                    setFeedbackMessage(e.target.value)
+                  }
                   required
                 />
               </div>

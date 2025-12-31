@@ -30,12 +30,22 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       ...react.configs.recommended.rules,
       ...react.configs['jsx-runtime'].rules,
+      
+      'react/no-unknown-property': ['error', { 
+        ignore: [
+          'object', 'geometry', 'material', 'rotation', 'intensity', 
+          'position', 'dispose', 'primitive', 'args', 'map', 'transparent'
+        ] 
+      }],
+
       'react-compiler/react-compiler': 'error',
       'react/prop-types': 'off',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
       ],
+      
+      '@typescript-eslint/no-explicit-any': 'warn' 
     },
     settings: {
       react: { version: 'detect' }

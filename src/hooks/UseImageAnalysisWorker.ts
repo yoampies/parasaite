@@ -1,25 +1,22 @@
 import { useState, useEffect, RefObject } from 'react';
 import { gsap } from 'gsap';
-import { IAnalysis, WorkerPayload } from '../types';
+import { IAnalysis, WorkerPayload, IBoundingBox } from '../types';
 
-/**
- * Interfaz para la respuesta que recibimos del Worker
- */
 interface WorkerResponse {
-  results: any[]; // Cambia 'any' por la interfaz de tus Bounding Boxes si la tienes
+  results: IBoundingBox[];
 }
 
 const useImageAnalysisWorker = (
   imageLoaded: boolean,
   analysis: IAnalysis | null,
-  drawCanvas: (results: any[]) => void,
+  drawCanvas: (results: IBoundingBox[]) => void,
   imgRef: RefObject<HTMLImageElement | null>,
   canvasRef: RefObject<HTMLCanvasElement | null>,
   progressBarRef: RefObject<HTMLDivElement | null>,
   scannerContainerRef: RefObject<HTMLDivElement | null>
 ) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [detectedParasites, setDetectedParasites] = useState<any[]>([]);
+  const [detectedParasites, setDetectedParasites] = useState<IBoundingBox[]>([]);
 
   useEffect(() => {
     // 1. Guardias de seguridad para evitar errores de nulidad
@@ -36,7 +33,7 @@ const useImageAnalysisWorker = (
 
     // 2. Inicialización del Web Worker
     // Nota: Usamos la sintaxis de URL de Vite/Webpack para compatibilidad con TS
-    const worker = new Worker(new URL("../worker.ts", import.meta.url));
+    const worker = new Worker(new URL('../worker.ts', import.meta.url));
 
     const imgData: WorkerPayload = {
       imageWidth: img.naturalWidth,
@@ -47,15 +44,16 @@ const useImageAnalysisWorker = (
     worker.postMessage(imgData);
 
     // 3. Animación de carga con GSAP
-    const progressTween = gsap.fromTo(progressBar, 
-      { width: "0%" }, 
+    const progressTween = gsap.fromTo(
+      progressBar,
+      { width: '0%' },
       {
-        width: "100%", 
-        duration: 3, 
-        ease: "power2.inOut",
+        width: '100%',
+        duration: 3,
+        ease: 'power2.inOut',
         onComplete: () => {
           setIsLoading(false);
-        }
+        },
       }
     );
 
