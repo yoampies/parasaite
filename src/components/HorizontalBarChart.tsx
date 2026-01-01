@@ -63,7 +63,7 @@ const HorizontalBarChart = ({ data }: HorizontalBarChartProps) => {
               .attr('width', (d) => xScale(d.value)),
           (exit) => exit.remove()
         )
-        .on('mouseover', function (event, d) {
+        .on('mouseover', function (_event, d) {
           const percentage = d.value.toFixed(1);
           g.append('text')
             .attr('class', 'tooltip')
