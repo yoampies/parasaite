@@ -1,18 +1,43 @@
 // src/worker.ts
-import { WorkerPayload } from './types';
-import { processMicroscopicSample } from './workerLogic';
+import { WorkerMessage } from './types';
+import { processMicroscopicSample, drawResults } from './workerLogic';
 
-const ctx = self as unknown as Worker;
+const ctxSelf = self as unknown as Worker;
 
-ctx.onmessage = async (e: MessageEvent<WorkerPayload>) => {
-  console.log('Worker: Procesando muestra microscópica...');
+let canvasContext: OffscreenCanvasRenderingContext2D | null = null;
 
-  const { imageWidth, imageHeight, detectedParasites } = e.data;
+ctxSelf.onmessage = async (e: MessageEvent<WorkerMessage>) => {
+  const msg = e.data;
 
-  setTimeout(() => {
-    const results = processMicroscopicSample(imageWidth, imageHeight, detectedParasites);
+  if (msg.type === 'INIT_CANVAS') {
+    const canvas = msg.canvas;
+    canvasContext = canvas.getContext('2d') as OffscreenCanvasRenderingContext2D;
+    console.log('Worker: OffscreenCanvas recibido e inicializado.');
+    return;
+  }
 
-    console.log('Worker: Segmentación completada. Enviando coordenadas al UI Thread.');
-    ctx.postMessage({ results });
-  }, 3000);
+  if (msg.type === 'PROCESS_IMAGE') {
+    const { imageWidth, imageHeight, detectedParasites } = msg;
+
+    if (
+      canvasContext &&
+      (canvasContext.canvas.width !== imageWidth || canvasContext.canvas.height !== imageHeight)
+    ) {
+      canvasContext.canvas.width = imageWidth;
+      canvasContext.canvas.height = imageHeight;
+    }
+
+    console.log('Worker: Procesando lógica...');
+
+    setTimeout(() => {
+      const results = processMicroscopicSample(imageWidth, imageHeight, detectedParasites);
+
+      if (canvasContext) {
+        drawResults(canvasContext, results);
+        console.log('Worker: Renderizado completado en OffscreenCanvas.');
+      }
+
+      ctxSelf.postMessage({ results });
+    }, 2000);
+  }
 };

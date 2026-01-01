@@ -33,3 +33,29 @@ export const processMicroscopicSample = (
     };
   });
 };
+
+export const drawResults = (
+  ctx: OffscreenCanvasRenderingContext2D | null,
+  results: IBoundingBox[]
+) => {
+  if (!ctx) return;
+
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  ctx.lineWidth = 3;
+  ctx.font = '16px sans-serif';
+
+  results.forEach((box) => {
+    ctx.strokeStyle = '#00FF00';
+    ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+    const text = box.detectedParasites[0].label;
+    const textWidth = ctx.measureText(text).width;
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(box.x, box.y - 20, textWidth + 10, 20);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(text, box.x + 5, box.y - 5);
+  });
+};

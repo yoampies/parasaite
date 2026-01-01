@@ -1,8 +1,6 @@
 import { ReactNode, Dispatch, SetStateAction, MutableRefObject } from 'react';
 import * as THREE from 'three';
 
-// ... (Mantenemos todas las interfaces anteriores iguales hasta FilterConfig) ...
-
 export interface IDetectedParasite {
   label: string;
   value: number;
@@ -225,15 +223,24 @@ export interface TableProps {
   parasites: IDetectedParasite[];
 }
 
-export interface WorkerPayload {
+export type WorkerMessageType = 'INIT_CANVAS' | 'PROCESS_IMAGE';
+
+export interface WorkerInitMessage {
+  type: 'INIT_CANVAS';
+  canvas: OffscreenCanvas;
+}
+
+export interface WorkerProcessMessage {
+  type: 'PROCESS_IMAGE';
   imageWidth: number;
   imageHeight: number;
   detectedParasites: IDetectedParasite[];
 }
 
+export type WorkerMessage = WorkerInitMessage | WorkerProcessMessage;
+
 export interface FilterConfig {
-  // Corrección: Usamos 'any' porque los filtros tienen props muy variados entre sí
-  component: React.ComponentType<any>;
+  component: React.ComponentType<unknown>;
   title: string;
   options?: string[];
   startingDate?: number;
