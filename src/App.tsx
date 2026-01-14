@@ -1,14 +1,23 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
-// Secciones / Páginas
-import Home from './sections/Home';
-import Scanner from './sections/Scanner';
-import ScannerResults from './sections/ScannerResults';
-import ScannerFeedback from './sections/ScannerFeedback';
-import History from './sections/History';
-import Library from './sections/Library';
-import ParasiteDetails from './sections/ParasiteDetails';
+const Home = lazy(() => import('./sections/Home'));
+const Scanner = lazy(() => import('./sections/Scanner'));
+const ScannerResults = lazy(() => import('./sections/ScannerResults'));
+const ScannerFeedback = lazy(() => import('./sections/ScannerFeedback'));
+const History = lazy(() => import('./sections/History'));
+const Library = lazy(() => import('./sections/Library'));
+const ParasiteDetails = lazy(() => import('./sections/ParasiteDetails'));
+
+// Componente de carga ligero
+const PageLoader = () => (
+  <div className="flex h-screen w-full items-center justify-center bg-white">
+    <div className="flex flex-col items-center gap-4">
+      <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#5e8d81] border-t-transparent"></div>
+      <p className="font-inter text-lg font-medium text-[#5e8d81]">Cargando...</p>
+    </div>
+  </div>
+);
 
 /**
  * @description Punto de entrada principal de la aplicación.
@@ -17,22 +26,33 @@ import ParasiteDetails from './sections/ParasiteDetails';
 const App = (): React.ReactElement => {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Dashboard Epidemiológico */}
-        <Route path="/" element={<Home />} />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Dashboard Epidemiológico */}
+          <Route path="/" element={<Home />} />
 
-        {/* Flujo de Diagnóstico por IA */}
-        <Route path="/scanner" element={<Scanner />} />
-        <Route path="/scanner-results/:analysisId" element={<ScannerResults />} />
-        <Route path="/feedback/:analysisId" element={<ScannerFeedback />} />
+          {/* Flujo de Diagnóstico por IA */}
+          <Route path="/scanner" element={<Scanner />} />
 
-        {/* Gestión de Historial y Datos */}
-        <Route path="/history" element={<History />} />
+          {/* Restaurada la ruta original que busca tu código */}
+          <Route path="/scanner-results/:analysisId" element={<ScannerResults />} />
 
-        {/* Repositorio Educativo */}
-        <Route path="/library" element={<Library />} />
-        <Route path="/library/:parasiteName" element={<ParasiteDetails />} />
-      </Routes>
+          {/* Restaurada la ruta de feedback que faltaba */}
+          <Route path="/feedback/:analysisId" element={<ScannerFeedback />} />
+
+          {/* Gestión de Historial y Datos */}
+          <Route path="/history" element={<History />} />
+
+          {/* Repositorio Educativo */}
+          <Route path="/library" element={<Library />} />
+
+          {/* Restaurado el parámetro original :parasiteName */}
+          <Route path="/library/:parasiteName" element={<ParasiteDetails />} />
+
+          {/* Fallback para rutas no encontradas (404) redirige a Home */}
+          <Route path="*" element={<Home />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 };
