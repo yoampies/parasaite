@@ -29,15 +29,13 @@ ctxSelf.onmessage = async (e: MessageEvent<WorkerMessage>) => {
 
     console.log('Worker: Procesando lógica...');
 
-    setTimeout(() => {
-      const results = processMicroscopicSample(imageWidth, imageHeight, detectedParasites);
+    const results = processMicroscopicSample(imageWidth, imageHeight, detectedParasites);
 
-      if (canvasContext) {
-        drawResults(canvasContext, results);
-        console.log('Worker: Renderizado completado en OffscreenCanvas.');
-      }
+    if (canvasContext) {
+      drawResults(canvasContext, results);
+      console.log('Worker: Renderizado completado en OffscreenCanvas.');
+    }
 
-      ctxSelf.postMessage({ results });
-    }, 2000);
+    ctxSelf.postMessage({ results });
   }
 };

@@ -10,15 +10,6 @@ import History from './sections/History';
 import Library from './sections/Library';
 import ParasiteDetails from './sections/ParasiteDetails';
 
-import { useGLTF } from "@react-three/drei";
-import { PARASITE_MODELS } from "./assets/constants";
-
-const DRACO_URL = "https://www.gstatic.com/draco/versioned/decoders/1.5.5/";
-
-Object.values(PARASITE_MODELS).forEach((path) => {
-  useGLTF.preload(path, DRACO_URL);
-});
-
 /**
  * @description Punto de entrada principal de la aplicación.
  * Define la jerarquía de rutas y la navegación del sistema Parasite-Vision AI.
@@ -29,15 +20,15 @@ const App = (): React.ReactElement => {
       <Routes>
         {/* Dashboard Epidemiológico */}
         <Route path="/" element={<Home />} />
-        
+
         {/* Flujo de Diagnóstico por IA */}
         <Route path="/scanner" element={<Scanner />} />
         <Route path="/scanner-results/:analysisId" element={<ScannerResults />} />
         <Route path="/feedback/:analysisId" element={<ScannerFeedback />} />
-        
+
         {/* Gestión de Historial y Datos */}
         <Route path="/history" element={<History />} />
-        
+
         {/* Repositorio Educativo */}
         <Route path="/library" element={<Library />} />
         <Route path="/library/:parasiteName" element={<ParasiteDetails />} />

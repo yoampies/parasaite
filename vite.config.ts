@@ -26,7 +26,6 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Aumentado a 10MB para soportar tus modelos 3D y GeoJSON pesados
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, 
         globPatterns: ['**/*.{js,css,html,ico,png,svg,glb,json}']
       }
@@ -41,11 +40,12 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // División de chunks para optimizar la carga inicial
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
-          'vendor-d3': ['d3'],
-          'vendor-gsap': ['gsap']
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('three')) return 'three-core'; 
+            if (id.includes('@react-three/drei')) return 'three-drei';
+            if (id.includes('gsap')) return 'animations';
+          }
         }
       }
     },

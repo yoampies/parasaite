@@ -72,6 +72,11 @@ const useImageAnalysisWorker = (
 
     return () => {
       progressTween.kill();
+      if (workerRef.current) {
+        workerRef.current.terminate(); // ¡Bang!
+        workerRef.current = null;
+      }
+      isCanvasTransferred.current = false;
     };
   }, [imageLoaded, analysis, imgRef, canvasRef, progressBarRef, scannerContainerRef]);
 
