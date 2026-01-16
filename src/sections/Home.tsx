@@ -27,36 +27,48 @@ const epidemiologicalCards: EpidemiologicalCard[] = [
 
 const Home = () => {
   const [geoData, setGeoData] = useState<any>(null);
+  const [shouldLoadMap, setShouldLoadMap] = useState(false);
+
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const { ref: mapRef, inView } = useInView({
     triggerOnce: true,
-    threshold: isMobile ? 0.5 : 0.1,
+    threshold: 0.1,
     rootMargin: isMobile ? '0px' : '200px',
   });
 
   useEffect(() => {
-    // Solo iniciamos la secuencia de red/proceso si el componente es visible
-    if (inView && !geoData) {
-      const fetchGeoData = async () => {
-        try {
-          const response = await fetch(VenGeoURL);
-          if (!response.ok) throw new Error('Error Mapa');
-          const topology = await response.json();
-          const objectKey = Object.keys(topology.objects)[0];
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const geoJson = topojson.feature(topology, topology.objects[objectKey] as any);
-          setGeoData(geoJson);
-        } catch (error) {
-          console.error(error);
-        }
-      };
-      fetchGeoData();
-    }
-  }, [inView, geoData]);
+    // [CORRECCIÓN]: Usamos ReturnType<typeof setTimeout> en lugar de NodeJS.Timeout
+    // Esto funciona universalmente en navegador (number) y node (object)
+    let timer: ReturnType<typeof setTimeout>;
 
-  // [OPTIMIZACIÓN 3] Accesibilidad (Contraste)
-  // Oscurecí ligeramente los colores de texto para pasar el ratio 4.5:1
+    if (inView && !geoData) {
+      timer = setTimeout(
+        () => {
+          setShouldLoadMap(true);
+
+          const fetchGeoData = async () => {
+            try {
+              const response = await fetch(VenGeoURL);
+              if (!response.ok) throw new Error('Error Mapa');
+              const topology = await response.json();
+              const objectKey = Object.keys(topology.objects)[0];
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const geoJson = topojson.feature(topology, topology.objects[objectKey] as any);
+              setGeoData(geoJson);
+            } catch (error) {
+              console.error(error);
+            }
+          };
+          fetchGeoData();
+        },
+        isMobile ? 1500 : 0
+      );
+    }
+
+    return () => clearTimeout(timer);
+  }, [inView, geoData, isMobile]);
+
   const { summary, epidemiology } = dashboardData;
 
   return (
@@ -67,7 +79,6 @@ const Home = () => {
         <main className="px-6 lg:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             <header className="flex flex-wrap justify-between gap-3 p-4">
-              {/* LCP Element: Renderizado inmediato */}
               <h1 className="text-[#0d1413] tracking-light text-[28px] lg:text-[32px] font-bold leading-tight min-w-72">
                 Resumen de Datos Semanales
               </h1>
@@ -86,7 +97,6 @@ const Home = () => {
                     {summary.parasitesDetected.count}
                   </p>
                   <div className="flex gap-1 mb-4">
-                    {/* Contraste mejorado para accesibilidad */}
                     <p className="text-[#4a7a6f] text-base font-normal">Últimos 7 Días</p>
                     <p className="text-[#067026] text-base font-medium">
                       {summary.parasitesDetected.change}
@@ -121,7 +131,6 @@ const Home = () => {
                       ref={mapRef}
                       className="h-[400px] w-full rounded-lg overflow-hidden border border-[#dae7e3] relative bg-gray-50"
                     >
-                      {/* Suspense solo para el componente pesado */}
                       <Suspense
                         fallback={
                           <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
@@ -129,8 +138,7 @@ const Home = () => {
                           </div>
                         }
                       >
-                        {/* Render condicional estricto */}
-                        {inView && geoData ? <ParGeoMap geometry={geoData} /> : null}
+                        {shouldLoadMap && geoData ? <ParGeoMap geometry={geoData} /> : null}
                       </Suspense>
                     </div>
                   </Card>

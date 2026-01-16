@@ -13,11 +13,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg', 's_models/*.glb'],
       manifest: {
-        name: 'ParasAIte - Diagnóstico de Parásitos',
+        name: 'ParasAIte',
         short_name: 'ParasAIte',
-        description: 'Aplicación de detección de parásitos con IA.',
+        description: 'Detección de parásitos con IA',
         theme_color: '#ffffff',
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
@@ -25,7 +25,7 @@ export default defineConfig({
         ]
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, 
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         globIgnores: ['**/models/**/*', '**/*.map']
       }
     })
@@ -40,11 +40,10 @@ export default defineConfig({
       output: {
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            if (id.includes('three') || id.includes('@react-three')) {
-              return 'vendor-3d'; 
-            }
+            if (id.includes('three') || id.includes('@react-three')) return 'vendor-3d';
             if (id.includes('recharts')) return 'vendor-charts';
             if (id.includes('topojson')) return 'vendor-maps';
+            if (id.includes('react-router')) return 'vendor-router';
           }
         }
       }

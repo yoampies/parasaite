@@ -6,7 +6,6 @@ import * as THREE from 'three';
 import { DynamicModelProps, MaterialRefData, ModelProps } from '../types';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
-// URL del decodificador Draco para procesar los archivos con compresión
 const DRACO_URL = 'https://www.gstatic.com/draco/versioned/decoders/1.5.5/';
 
 const DynamicModel = ({
@@ -17,7 +16,6 @@ const DynamicModel = ({
   setActivePart,
   isXRayEnabled,
 }: DynamicModelProps) => {
-  // Se añade DRACO_URL como segundo parámetro para permitir la descompresión del modelo
   const { scene } = useGLTF(modelPath, DRACO_URL);
   const lastSelected = useRef<THREE.Object3D | null>(null);
 
