@@ -2,26 +2,25 @@ import { memo, Fragment } from 'react';
 import ModelCanvas from './ModelCanvas';
 import { SectionRenderingProps } from '../types';
 
-const SectionRendering = ({ 
-  sections, 
-  parasiteName, 
-  scrollPositionRef, 
-  isExpanded, 
-  setIsExpanded, 
-  setExpandedModelPath, 
-  parasiteRotation 
+const SectionRendering = ({
+  sections,
+  parasiteName,
+  scrollPositionRef,
+  isExpanded,
+  setIsExpanded,
+  setExpandedModelPath,
+  parasiteRotation,
 }: SectionRenderingProps) => {
-
   const getModelPathForSection = (title: string): string | null => {
     const baseName = parasiteName;
     let suffix = '';
-    
+
     const adultStages = ['Adulto', 'Trofozoíto'];
     const larvalStages = ['Huevo', 'Quiste', 'Larva'];
 
-    if (adultStages.some(stage => title.includes(stage))) {
+    if (adultStages.some((stage) => title.includes(stage))) {
       suffix = '_A';
-    } else if (larvalStages.some(stage => title.includes(stage))) {
+    } else if (larvalStages.some((stage) => title.includes(stage))) {
       suffix = '_H';
     }
 
@@ -32,13 +31,13 @@ const SectionRendering = ({
     <>
       {sections.map((section, index) => {
         const modelPath = getModelPathForSection(section.title);
-        
+
         return (
           <Fragment key={`${parasiteName}-section-${index}`}>
             <h2 className="text-[#101816] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">
               {section.title}
             </h2>
-            
+
             {section.text && (
               <p className="text-[#101816] text-base font-normal leading-normal pb-3 pt-1 px-4">
                 {section.text}
@@ -50,8 +49,8 @@ const SectionRendering = ({
                 <p className="text-gray-500 text-sm italic mb-2">
                   ¡Haz clic sobre el parásito para inspeccionarlo en detalle!
                 </p>
-                <ModelCanvas 
-                  modelPath={modelPath} 
+                <ModelCanvas
+                  modelPath={modelPath}
                   rotation={parasiteRotation}
                   scrollPositionRef={scrollPositionRef}
                   setIsExpanded={setIsExpanded}
@@ -59,15 +58,14 @@ const SectionRendering = ({
                 />
               </div>
             )}
-            
+
             {section.stages && (
               <div className="grid grid-cols-[40px_1fr] gap-x-2 px-4 mt-4">
-                {/* 💡 USAMOS 'stagesArray' PARA EVITAR EL ERROR DE UNDEFINED */}
                 {section.stages.map((stage, stageIndex, stagesArray) => (
                   <Fragment key={`${section.title}-stage-${stageIndex}`}>
                     <div className="flex flex-col items-center gap-1 pt-3">
-                      <div 
-                        className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-6 border border-[#dae7e3]" 
+                      <div
+                        className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-6 border border-[#dae7e3]"
                         style={{ backgroundImage: `url("${stage.imgUrl}")` }}
                         role="img"
                         aria-label={`Imagen de etapa: ${stage.title}`}
@@ -93,6 +91,6 @@ const SectionRendering = ({
       })}
     </>
   );
-}
+};
 
 export default memo(SectionRendering);
