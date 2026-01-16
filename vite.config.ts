@@ -36,13 +36,14 @@ export default defineConfig({
     },
   },
   build: {
+    modulePreload: false, 
     rollupOptions: {
       output: {
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
             if (id.includes('three') || id.includes('@react-three')) return 'vendor-3d';
             if (id.includes('recharts')) return 'vendor-charts';
-            if (id.includes('topojson')) return 'vendor-maps';
+            if (id.includes('topojson') || id.includes('d3')) return 'vendor-maps';
             if (id.includes('react-router')) return 'vendor-router';
           }
         }

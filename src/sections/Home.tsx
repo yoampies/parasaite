@@ -5,7 +5,7 @@ import Card from '../components/Card';
 import BarChart from '../components/BarChart';
 import HorizontalBarChart from '../components/HorizontalBarChart';
 
-import * as topojson from 'topojson-client';
+// [OPTIMIZACIÓN]: Eliminamos import estático de topojson
 import { useInView } from 'react-intersection-observer';
 
 const ParGeoMap = lazy(() => import('../assets/ParGeoMap'));
@@ -38,8 +38,6 @@ const Home = () => {
   });
 
   useEffect(() => {
-    // [CORRECCIÓN]: Usamos ReturnType<typeof setTimeout> en lugar de NodeJS.Timeout
-    // Esto funciona universalmente en navegador (number) y node (object)
     let timer: ReturnType<typeof setTimeout>;
 
     if (inView && !geoData) {
@@ -49,7 +47,12 @@ const Home = () => {
 
           const fetchGeoData = async () => {
             try {
-              const response = await fetch(VenGeoURL);
+              // [OPTIMIZACIÓN]: Carga paralela de datos y librería (Code Splitting manual)
+              const [response, topojson] = await Promise.all([
+                fetch(VenGeoURL),
+                import('topojson-client'), // Se descarga solo aquí
+              ]);
+
               if (!response.ok) throw new Error('Error Mapa');
               const topology = await response.json();
               const objectKey = Object.keys(topology.objects)[0];
