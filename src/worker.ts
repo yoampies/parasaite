@@ -84,7 +84,6 @@ ctxSelf.onmessage = async (e: MessageEvent<any>) => {
     try {
       console.log('Worker: Ejecutando inferencia real...');
 
-      // Ejecutar la sesión de inferencia localmente
       const outputNames = session.outputNames;
       const feeds: Record<string, Tensor> = {};
       feeds[session.inputNames[0]] = inputTensor;
@@ -92,17 +91,111 @@ ctxSelf.onmessage = async (e: MessageEvent<any>) => {
       const resultsSession = await session.run(feeds);
       const outputTensor = resultsSession[outputNames[0]];
 
-      console.log('Worker: Inferencia completada con éxito. Tensor de salida generado.');
+      const outputData = outputTensor.data as Float32Array; // Array plano de floats
+      const numChannels = outputTensor.dims[1]; // 10 propiedades (4 cajas + 6 clases)
+      const numCandidates = outputTensor.dims[2]; // 8400 candidatos de cajas
 
+      const CONFIDENCE_THRESHOLD = 0.3; // Filtro de confianza mínimo clínico
+      const IOU_THRESHOLD = 0.45; // Límite de superposición para NMS
+
+      interface CandidateDetection {
+        box: [number, number, number, number]; // [x_min, y_min, x_max, y_max]
+        confidence: number;
+        classId: number;
+      }
+
+      const candidates: CandidateDetection[] = [];
+
+      // Recorrer los 8400 candidatos (Lectura transpuesta horizontal)
+      for (let c = 0; c < numCandidates; c++) {
+        // 1. Extraer los scores de las clases para este candidato
+        let maxScore = 0;
+        let classId = -1;
+
+        // Las clases empiezan desde el índice 4 hasta el numChannels (4 + 6 = 10)
+        for (let cl = 4; cl < numChannels; cl++) {
+          const score = outputData[cl * numCandidates + c];
+          if (score > maxScore) {
+            maxScore = score;
+            classId = cl - 4; // Ajustar índice para que coincida con nuestro id de parásito (0 a 5)
+          }
+        }
+
+        // Si la confianza supera nuestro umbral base, procesamos sus coordenadas geográficas
+        if (maxScore > CONFIDENCE_THRESHOLD) {
+          // Extraer formato nativo YOLOv8: [x_center, y_center, width, height]
+          const cx = outputData[0 * numCandidates + c];
+          const cy = outputData[1 * numCandidates + c];
+          const w = outputData[2 * numCandidates + c];
+          const h = outputData[3 * numCandidates + c];
+
+          // Convertir matemáticamente a Coordenadas Relativas de Esquina: [x_min, y_min, x_max, y_max]
+          // Esto mapea los extremos del parásito en un rango de [0.0, 1.0] relativo al lienzo
+          const x_min = Math.max(0, cx - w / 2);
+          const y_min = Math.max(0, cy - h / 2);
+          const x_max = Math.min(640, cx + w / 2);
+          const y_max = Math.min(640, cy + h / 2);
+
+          candidates.push({
+            box: [x_min, y_min, x_max, y_max],
+            confidence: maxScore,
+            classId: classId,
+          });
+        }
+      }
+
+      // 2. Aplicar el filtro de Supresión No Máxima (NMS) local para eliminar duplicados
+      const finalDetections: CandidateDetection[] = [];
+
+      // Ordenar candidatos por nivel de confianza descendente
+      candidates.sort((a, b) => b.confidence - a.confidence);
+
+      while (candidates.length > 0) {
+        const best = candidates.shift()!;
+        finalDetections.push(best);
+
+        // Filtrar y eliminar todas las cajas remanentes que se superpongan demasiado con la mejor
+        for (let i = candidates.length - 1; i >= 0; i--) {
+          if (calculateIoU(best.box, candidates[i].box) > IOU_THRESHOLD) {
+            candidates.splice(i, 1); // Descartar duplicado redundante
+          }
+        }
+      }
+
+      // Liberar memoria del fotograma gráfico transferido
       imageBitmap.close();
 
-      // De momento enviamos un flag de completado para validar que la tubería matemática no se rompa
+      console.log(
+        `Worker: Inferencia y decodificación terminadas. Hallazgos reales: ${finalDetections.length}`
+      );
+
+      // Enviar las bounding boxes limpias y parseadas de vuelta a la UI del microscopio
       ctxSelf.postMessage({
-        type: 'INFERENCE_DONE',
-        rawOutput: { data: outputTensor.data, dims: outputTensor.dims },
+        type: 'INFERENCE_SUCCESS',
+        results: finalDetections,
       });
     } catch (inferenceError) {
       console.error('Worker: Error durante la inferencia ONNX:', inferenceError);
     }
   }
 };
+
+// Función auxiliar para calcular la Intersección sobre Unión (IoU) entre dos cajas
+function calculateIoU(
+  boxA: [number, number, number, number],
+  boxB: [number, number, number, number]
+): number {
+  const xA = Math.max(boxA[0], boxB[0]);
+  const yA = Math.max(boxA[1], boxB[1]);
+  const xB = Math.min(boxA[2], boxB[2]);
+  const yB = Math.min(boxA[3], boxB[3]);
+
+  const intersectionArea = Math.max(0, xB - xA) * Math.max(0, yB - yA);
+
+  const boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1]);
+  const boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1]);
+
+  const unionArea = boxAArea + boxBArea - intersectionArea;
+
+  return unionArea === 0 ? 0 : intersectionArea / unionArea;
+}
