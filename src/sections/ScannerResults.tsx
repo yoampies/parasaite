@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 // Componentes
-import Navbar from '../components/Navbar';
 import Table from '../components/Table';
 import HorizontalBarChart from '../components/HorizontalBarChart';
 import Error from '../components/Error';
@@ -122,7 +121,6 @@ function ScannerResults() {
   return (
     <div className="relative flex size-full min-h-screen flex-col bg-white font-inter overflow-x-hidden">
       <div className="layout-container flex h-full grow flex-col">
-        <Navbar />
         <main className="gap-1 px-6 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[920px] flex-1">
             <header className="flex flex-wrap justify-between gap-3 p-4">

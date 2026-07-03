@@ -102,12 +102,18 @@ export const recentAnalyses: IAnalysis[] = [
   },
 ];
 
+// Modificación en src/assets/constants.ts
+
+// 1. Sincronizar el orden exacto de los índices de clase del modelo (0 a 7)
 export const parasiteTypes: string[] = [
-  'Ascaris lumbricoides',
-  'Enterobius vermicularis',
-  'Trichuris trichiura',
-  'Necator americanus',
-  'Giardia duodenalis',
+  'Ascaris lumbricoides', // Clase 0
+  'Blastocystis hominis', // Clase 1
+  'Enterobius vermicularis', // Clase 2
+  'Giardia lamblia', // Clase 3
+  'Necator americanus', // Clase 4
+  'Trichuris trichiura', // Clase 5
+  'Entamoeba histolytica/dispar', // Clase 6
+  'Cryptosporidium spp.', // Clase 7
 ];
 
 export const months: string[] = [
@@ -175,41 +181,64 @@ export const recentImages: IAnalysis[] = [
 ];
 
 // Library.jsx
+// 2. Expandir el array completo de la librería estática
+// (Nota: puedes usar marcadores de imágenes temporales mientras subes los assets reales)
 export const parasites: IParasite[] = [
   {
-    id: 1,
+    id: 0,
     name: 'Ascaris lumbricoides',
     description:
-      'Ascaris lumbricoides es un parásito nematodo (gusano redondo) que causa la ascariasis. Es la infección por helmintos más común a nivel mundial.',
+      'Nematodo intestinal gigante. Infección común por geohelmintos mediante ingesta de huevos embrionados.',
     imgURL: ascaris,
+  },
+  {
+    id: 1,
+    name: 'Blastocystis hominis',
+    description:
+      'Protozoario polimórfico controversial. Alta prevalencia post-desastre debido a saneamiento deficiente.',
+    imgURL: '/images/parasites-default.png', // Reemplazar luego por tu asset
   },
   {
     id: 2,
     name: 'Enterobius vermicularis',
     description:
-      'Enterobius vermicularis, conocido como oxiuro, es un nematodo que causa la enterobiasis. Es una de las infecciones por parásitos más comunes en los niños.',
+      'Conocido como oxiuro. Causa enterobiasis infantil transmitida por vía fecal-oral o inhalación de huevos.',
     imgURL: enterobius,
   },
   {
     id: 3,
-    name: 'Trichuris trichiura',
+    name: 'Giardia lamblia',
     description:
-      'Trichuris trichiura, o gusano látigo, es un parásito nematodo que causa la tricuriasis. Es un geohelminto, común en áreas tropicales y subtropicales.',
-    imgURL: trichuris,
+      'Protozoario flagelado. Produce quistes altamente infecciosos que colonizan el duodeno provocando malabsorción.',
+    imgURL: giardia,
   },
   {
     id: 4,
     name: 'Necator americanus',
     description:
-      'Necator americanus es un nematodo parásito conocido como gusano gancho. Causa la uncinariasis, una de las principales causas de anemia en regiones tropicales.',
+      'Gusano gancho (uncinaria). Larvas filariformes penetran la piel causando anemia ferropénica severa.',
     imgURL: necator,
   },
   {
     id: 5,
-    name: 'Giardia duodenalis',
+    name: 'Trichuris trichiura',
     description:
-      'Giardia duodenalis, también conocida como Giardia lamblia, es un protozoo flagelado que causa la giardiasis, una enfermedad diarreica común.',
-    imgURL: giardia,
+      'Gusano látigo. Geohelminto que parasita el ciego, pudiendo provocar disentería y prolapso rectal en cargas masivas.',
+    imgURL: trichuris,
+  },
+  {
+    id: 6,
+    name: 'Entamoeba histolytica/dispar',
+    description:
+      'Agente causal de la amebiasis y disentería amebiana severa por agua o alimentos expuestos a lodos fecales.',
+    imgURL: '/images/parasites-default.png',
+  },
+  {
+    id: 7,
+    name: 'Cryptosporidium spp.',
+    description:
+      'Protozoario hídrico oportunista. Sus ooquistes poseen una pared gruesa inmune a la cloración estándar.',
+    imgURL: '/images/parasites-default.png',
   },
 ];
 

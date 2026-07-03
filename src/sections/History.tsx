@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useHistoryStore } from '../hooks/UseHistoryStore';
 
 // Components
-import Navbar from '../components/Navbar';
 import Card from '../components/Card';
 import Search from '../components/Search';
 import SelectionFilter from '../components/SelectionFilter';
@@ -58,7 +57,6 @@ function History() {
       style={containerStyle}
     >
       <div className="layout-container flex h-full grow flex-col">
-        <Navbar />
         <div className="gap-1 px-6 flex flex-1 justify-center py-5">
           {/* Panel Lateral de Filtros */}
           <aside className="layout-content-container flex flex-col w-80">

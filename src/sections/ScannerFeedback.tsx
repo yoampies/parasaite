@@ -2,7 +2,6 @@ import { useState, useMemo, ChangeEvent, FormEvent, CSSProperties } from 'react'
 import { useParams, useNavigate } from 'react-router-dom';
 
 // Componentes
-import Navbar from '../components/Navbar';
 import Error from '../components/Error';
 
 // Constantes y Tipos
@@ -84,7 +83,6 @@ const ScannerFeedback = () => {
       style={dynamicStyles}
     >
       <div className="layout-container flex h-full grow flex-col">
-        <Navbar />
         <main className="px-10 lg:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col w-[512px] max-w-[512px] py-5 flex-1">
             <header>

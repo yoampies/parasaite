@@ -1,15 +1,16 @@
-import React, { Suspense, lazy } from 'react';
+// src/App.tsx - Estructura corregida con Navbar y contenedor global
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar'; // Importamos tu Navbar estática
+import Home from './sections/Home';
+import Scanner from './sections/Scanner';
+import ScannerResults from './sections/ScannerResults';
+import ScannerFeedback from './sections/ScannerFeedback';
 
-const Home = lazy(() => import('./sections/Home'));
-const Scanner = lazy(() => import('./sections/Scanner'));
-const ScannerResults = lazy(() => import('./sections/ScannerResults'));
-const ScannerFeedback = lazy(() => import('./sections/ScannerFeedback'));
 const History = lazy(() => import('./sections/History'));
 const Library = lazy(() => import('./sections/Library'));
 const ParasiteDetails = lazy(() => import('./sections/ParasiteDetails'));
 
-// Componente de carga ligero
 const PageLoader = () => (
   <div className="flex h-screen w-full items-center justify-center bg-white">
     <div className="flex flex-col items-center gap-4">
@@ -19,40 +20,27 @@ const PageLoader = () => (
   </div>
 );
 
-/**
- * @description Punto de entrada principal de la aplicación.
- * Define la jerarquía de rutas y la navegación del sistema Parasite-Vision AI.
- */
 const App = (): React.ReactElement => {
   return (
     <BrowserRouter>
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          {/* Dashboard Epidemiológico */}
-          <Route path="/" element={<Home />} />
+      {/* 1. La Navbar se renderiza fija arriba para toda la aplicación */}
+      <Navbar />
 
-          {/* Flujo de Diagnóstico por IA */}
-          <Route path="/scanner" element={<Scanner />} />
-
-          {/* Restaurada la ruta original que busca tu código */}
-          <Route path="/scanner-results/:analysisId" element={<ScannerResults />} />
-
-          {/* Restaurada la ruta de feedback que faltaba */}
-          <Route path="/feedback/:analysisId" element={<ScannerFeedback />} />
-
-          {/* Gestión de Historial y Datos */}
-          <Route path="/history" element={<History />} />
-
-          {/* Repositorio Educativo */}
-          <Route path="/library" element={<Library />} />
-
-          {/* Restaurado el parámetro original :parasiteName */}
-          <Route path="/library/:parasiteName" element={<ParasiteDetails />} />
-
-          {/* Fallback para rutas no encontradas (404) redirige a Home */}
-          <Route path="*" element={<Home />} />
-        </Routes>
-      </Suspense>
+      {/* 2. Contenedor global con márgenes simétricos idénticos a la sección Home */}
+      <main className="bg-white min-h-[calc(100vh-64px)] overflow-hidden">
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/scanner" element={<Scanner />} />
+            <Route path="/scanner-results/:analysisId" element={<ScannerResults />} />
+            <Route path="/feedback/:analysisId" element={<ScannerFeedback />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/library" element={<Library />} />
+            <Route path="/library/:parasiteName" element={<ParasiteDetails />} />
+            <Route path="*" element={<Home />} />
+          </Routes>
+        </Suspense>
+      </main>
     </BrowserRouter>
   );
 };

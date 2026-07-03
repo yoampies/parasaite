@@ -1,220 +1,156 @@
-import { useState, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
-
-// Components
-import Navbar from '../components/Navbar';
-import Card from '../components/Card';
+import React, { useState, useEffect, useRef } from 'react';
 import ImageUploader from '../components/ImageUploader';
+import ScannerCard from '../components/ScannerCard';
+import RegularCard from '../components/RegularCard';
+import { recentImages } from '../assets/constants';
 
-// Hooks & Store
-import { useHistoryStore } from '../hooks/UseHistoryStore';
-import useImageAnalysisWorker from '../hooks/UseImageAnalysisWorker';
+const Scanner: React.FC = () => {
+  const [inputType, setInputType] = useState<'camera' | 'file'>('camera');
+  const [cameraStream, setStream] = useState<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-// Constants & Types
-import { possibleParasites } from '../assets/constants';
-import { IAnalysis, IDetectedParasite } from '../types';
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
-/**
- * @description Genera datos simulados para la demo (en producción vendría del backend)
- */
-const generateRandomParasites = (): IDetectedParasite[] => {
-  const parasites: IDetectedParasite[] = [];
-  const numberOfParasites = Math.floor(Math.random() * 3) + 1;
-
-  for (let i = 0; i < numberOfParasites; i++) {
-    const randomParasite = possibleParasites[Math.floor(Math.random() * possibleParasites.length)];
-    const randomValue = Math.floor(Math.random() * 20) + 80;
-    parasites.push({ label: randomParasite, value: randomValue });
-  }
-  return parasites;
-};
-
-const generateContent = (detectedParasites: IDetectedParasite[]): string => {
-  if (detectedParasites.length > 0) {
-    const names = detectedParasites.map((p) => p.label).join(', ');
-    return `Detectado: ${names}`;
-  }
-  return 'Sin hallazgos significativos.';
-};
-
-function Scanner() {
-  const navigate = useNavigate();
-
-  // 1. Estado Global (Zustand) y Local
-  const { analyses, addAnalysis } = useHistoryStore();
-  const [selectedImage, setSelectedImage] = useState<IAnalysis | null>(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
-
-  // 2. Referencias para el Worker y UI
-  const imgRef = useRef<HTMLImageElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const progressBarRef = useRef<HTMLDivElement>(null);
-  const scannerContainerRef = useRef<HTMLDivElement>(null);
-
-  // 3. Hook del Worker (Controla la magia del OffscreenCanvas)
-  const { isLoading } = useImageAnalysisWorker(
-    imageLoaded,
-    selectedImage,
-    imgRef,
-    canvasRef,
-    progressBarRef,
-    scannerContainerRef
-  );
-
-  const selectedFileName = useMemo(() => {
-    return selectedImage?.fileName || 'Nueva Muestra';
-  }, [selectedImage]);
-
-  // 4. Manejador de Carga de Imagen
-  const handleUploadedImage = (file: File) => {
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      const base64Image = e.target?.result as string;
-      const randomResults = generateRandomParasites();
-
-      const newAnalysis: IAnalysis = {
-        id: uuidv4(),
-        imgURL: base64Image,
-        date: new Date().toLocaleString(),
-        fileName: file.name,
-        detectedParasites: randomResults,
-        content: generateContent(randomResults),
-      };
-
-      // Guardamos en Zustand y seleccionamos
-      addAnalysis(newAnalysis);
-      setSelectedImage(newAnalysis);
-      setImageLoaded(false); // Reset para disparar el evento onLoad de la imagen
-    };
-
-    reader.readAsDataURL(file);
-  };
-
-  const handleImageSelect = (analysis: IAnalysis) => {
-    setSelectedImage(analysis);
-    setImageLoaded(false);
-  };
-
-  const handleAnalyzeClick = () => {
-    if (selectedImage) {
-      navigate(`/scanner-results/${selectedImage.id}`, { state: { analysis: selectedImage } });
+  useEffect(() => {
+    if (inputType === 'camera') {
+      startCamera();
+      setSelectedImage(null);
+    } else {
+      stopCamera();
     }
-  };
+
+    return () => {
+      stopCamera();
+    };
+  }, [inputType]);
+
+  async function startCamera() {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      });
+
+      setStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err: any) {
+      console.error('Scanner: Error al acceder a la cámara:', err);
+      setCameraError('No se pudo acceder a la cámara. Verifica los permisos de tu dispositivo.');
+      setInputType('file');
+    }
+  }
+
+  function stopCamera() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+      setStream(null);
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }
 
   return (
-    <div className="relative flex size-full min-h-screen flex-col bg-white overflow-x-hidden font-inter">
-      <div className="layout-container flex h-full grow flex-col">
-        <Navbar />
+    // Reduje un poco el max-w-7xl a max-w-5xl para que el video no sea gigantesco y se vea muy profesional
+    <div className="w-full max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-8">
+      {/* 1. Selector de Entrada de la UI (Centrado arriba) */}
+      <div className="flex bg-neutral-100 p-1 rounded-xl max-w-md mx-auto shadow-inner w-full">
+        <button
+          onClick={() => setInputType('camera')}
+          className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+            inputType === 'camera'
+              ? 'bg-white text-emerald-600 shadow-sm'
+              : 'text-neutral-500 hover:text-neutral-800'
+          }`}
+        >
+          <span>🎥</span> Cámara en Vivo
+        </button>
+        <button
+          onClick={() => setInputType('file')}
+          className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+            inputType === 'file'
+              ? 'bg-white text-emerald-600 shadow-sm'
+              : 'text-neutral-500 hover:text-neutral-800'
+          }`}
+        >
+          <span>📁</span> Subir Archivo
+        </button>
+      </div>
 
-        <main className="px-10 lg:px-40 flex flex-1 justify-center py-5">
-          <div className="layout-content-container flex flex-col max-w-[960px] flex-1 gap-6">
-            <header className="flex flex-wrap justify-between gap-3 p-4">
-              <h1 className="text-[#101816] tracking-light text-[32px] font-bold leading-tight">
-                Escáner Microbiológico
-              </h1>
-            </header>
-
-            {/* AREA DE ESCANEO ACTIVO */}
-            <section
-              ref={scannerContainerRef}
-              className="relative w-full min-h-[400px] bg-[#f0f5f4] rounded-xl overflow-hidden border-2 border-dashed border-[#5e8d81] flex flex-col items-center justify-center transition-transform"
-            >
-              {!selectedImage ? (
-                <div className="p-8 w-full">
-                  <ImageUploader
-                    instruction="Sube una muestra para iniciar el análisis IA"
-                    message="El Web Worker procesará la imagen en segundo plano"
-                    typesOfFiles="JPG, PNG"
-                    selectedFileName={selectedFileName}
-                    onFileSelect={handleUploadedImage}
-                  />
-                </div>
-              ) : (
-                <div className="relative w-full h-full flex flex-col items-center">
-                  {/* Barra de Progreso */}
-                  <div className="w-full h-1 bg-gray-200 absolute top-0 left-0 z-20">
-                    <div
-                      ref={progressBarRef}
-                      className="h-full bg-[#00c795] w-0 transition-all ease-out"
-                    />
-                  </div>
-
-                  {/* Contenedor de Imagen y Canvas superpuesto */}
-                  <div className="relative max-w-full max-h-[500px] mt-4">
-                    <img
-                      ref={imgRef}
-                      src={selectedImage.imgURL}
-                      alt="Microscopía"
-                      className="max-h-[500px] object-contain rounded-lg shadow-lg"
-                      onLoad={() => setImageLoaded(true)}
-                    />
-                    {/* El Canvas está posicionado absolutamente sobre la imagen */}
-                    <canvas
-                      ref={canvasRef}
-                      className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                    />
-                  </div>
-
-                  <div className="p-4 flex gap-4">
-                    <button
-                      onClick={() => setSelectedImage(null)}
-                      className="text-[#5e8d81] font-medium hover:underline"
-                    >
-                      Cambiar Imagen
-                    </button>
-                    <p className="text-sm text-gray-500 italic py-1">
-                      {isLoading
-                        ? 'El Web Worker está segmentando parásitos...'
-                        : 'Segmentación completada.'}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {/* Galería de muestras recientes (Desde Zustand) */}
-            <section aria-labelledby="recent-images-title">
-              <h2
-                id="recent-images-title"
-                className="text-[#101816] text-[22px] font-bold px-4 pb-3"
-              >
-                Muestras Recientes
-              </h2>
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4">
-                {analyses.slice(0, 5).map((analysis) => (
-                  <Card
-                    key={analysis.id}
-                    imgURL={analysis.imgURL}
-                    onClick={() => handleImageSelect(analysis)}
-                    isSelected={selectedImage?.id === analysis.id}
-                  />
-                ))}
+      {/* 2. El visor del microscopio o el área de subida (Ocupa todo el ancho del contenedor) */}
+      <div className="w-full relative bg-neutral-900 rounded-2xl overflow-hidden shadow-lg flex items-center justify-center aspect-video max-h-[70vh]">
+        {inputType === 'camera' ? (
+          <>
+            {cameraError && (
+              <div className="absolute inset-0 bg-neutral-900/90 flex items-center justify-center p-4 text-center z-10">
+                <p className="text-red-400 text-sm font-medium">{cameraError}</p>
               </div>
-            </section>
-
-            {/* Footer de Acción */}
-            <footer className="flex px-4 py-3 justify-end sticky bottom-0 bg-white/80 backdrop-blur-sm border-t border-gray-100">
-              <button
-                type="button"
-                className={`flex min-w-[120px] items-center justify-center rounded-lg h-12 px-6 text-sm font-bold transition-all shadow-md
-                  ${
-                    selectedImage && !isLoading
-                      ? 'bg-[#00c795] text-[#101816] hover:bg-[#00a67d] cursor-pointer'
-                      : 'bg-[#f0f5f4] text-gray-400 cursor-not-allowed'
-                  }`}
-                onClick={handleAnalyzeClick}
-                disabled={!selectedImage || isLoading}
-              >
-                {isLoading ? 'Procesando...' : 'Ver Resultados Detallados'}
-              </button>
-            </footer>
+            )}
+            <video
+              id="microscope-preview"
+              ref={videoRef}
+              playsInline
+              muted
+              autoPlay
+              className="w-full h-full object-cover"
+            />
+            <canvas
+              id="scanner-overlay"
+              className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
+            />
+          </>
+        ) : (
+          <div className="w-full h-full p-4 bg-white flex items-center justify-center overflow-auto">
+            <ImageUploader
+              instruction="Análisis estático de muestras"
+              onFileSelect={(file) => {
+                const objectUrl = URL.createObjectURL(file);
+                setSelectedImage(objectUrl);
+                console.log('Archivo microscópico cargado:', file);
+              }}
+            />
           </div>
-        </main>
+        )}
+      </div>
+
+      {/* Tarjeta de previsualización estática (Centrada bajo el uploader si hay un archivo) */}
+      {inputType === 'file' && selectedImage && (
+        <div className="w-full max-w-md mx-auto">
+          <ScannerCard imgURL={selectedImage} isSelected={true} />
+        </div>
+      )}
+
+      {/* 3. Bloque contenedor de Capturas Recientes (Abajo en filas anchas) */}
+      <div className="bg-neutral-50 p-6 rounded-2xl border border-neutral-100 flex flex-col gap-6 w-full mt-4">
+        <div>
+          <h3 className="text-[#101816] text-xl font-bold leading-tight">Capturas Recientes</h3>
+          <p className="text-[#5e8d81] text-sm font-normal mt-1">
+            Muestras en las últimas 24 horas
+          </p>
+        </div>
+
+        {/* Aquí utilizamos una grilla (grid) para colocar las tarjetas en fila. 
+            En teléfonos se ve 1 columna, en tablets 2, y en computadoras 3. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {recentImages.map((analysis) => (
+            <RegularCard
+              key={analysis.id}
+              title={analysis.fileName || `Muestra #${analysis.id}`}
+              content={analysis.content}
+              imgURL={analysis.imgURL}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
-}
+};
 
 export default Scanner;

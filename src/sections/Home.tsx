@@ -1,6 +1,5 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { useMediaQuery } from 'react-responsive';
-import Navbar from '../components/Navbar';
 import Card from '../components/Card';
 import BarChart from '../components/BarChart';
 import HorizontalBarChart from '../components/HorizontalBarChart';
@@ -77,8 +76,6 @@ const Home = () => {
   return (
     <div className="relative flex size-full min-h-screen flex-col bg-white overflow-x-hidden font-inter">
       <div className="layout-container flex h-full grow flex-col">
-        <Navbar />
-
         <main className="px-6 lg:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             <header className="flex flex-wrap justify-between gap-3 p-4">

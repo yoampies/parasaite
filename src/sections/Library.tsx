@@ -1,5 +1,4 @@
 import { useState, useTransition, useMemo } from 'react';
-import Navbar from '../components/Navbar';
 import RegularCard from '../components/RegularCard';
 import Search from '../components/Search';
 import { parasites } from '../assets/constants';
@@ -27,8 +26,6 @@ const Library = () => {
   return (
     <div className="relative flex size-full min-h-screen flex-col bg-white overflow-x-hidden font-inter">
       <div className="layout-container flex h-full grow flex-col">
-        <Navbar />
-
         <main className="px-10 lg:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             <div className="flex flex-wrap gap-2 p-4">

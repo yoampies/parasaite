@@ -240,7 +240,7 @@ export interface WorkerProcessMessage {
 export type WorkerMessage = WorkerInitMessage | WorkerProcessMessage;
 
 export interface FilterConfig {
-  component: React.ComponentType<unknown>;
+  component: React.ComponentType<any>;
   title: string;
   options?: string[];
   startingDate?: number;

@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import ExpandedModelCard from '../components/ExpandedModelCard';
 
 // Componentes
-import Navbar from '../components/Navbar';
 import Error from '../components/Error';
 import SectionRendering from '../components/SectionRendering';
 
@@ -36,12 +35,14 @@ const ParasiteDetails = () => {
 
   // 5. Obtención de datos detallados (Morfología, Ciclo de vida, etc.)
   const currentParasiteData = useMemo<IParasiteDetail | undefined>(() => {
-    return parasiteName ? (parasiteData as Record<string, IParasiteDetail>)[parasiteName] : undefined;
+    return parasiteName
+      ? (parasiteData as Record<string, IParasiteDetail>)[parasiteName]
+      : undefined;
   }, [parasiteName]);
 
   // 6. Efecto para restaurar la posición del scroll tras cerrar el visor 3D
   useEffect(() => {
-    if (!isExpanded && scrollPositionRef.current !== null) {        
+    if (!isExpanded && scrollPositionRef.current !== null) {
       requestAnimationFrame(() => {
         window.scrollTo(0, scrollPositionRef.current);
       });
@@ -72,18 +73,21 @@ const ParasiteDetails = () => {
   };
 
   // Rotación específica según la especie para optimizar la vista inicial
-  const parasiteRotation: [number, number, number] = 
-    ['ascaris-lumbricoides', 'enterobius-vermicularis', 'trichuris-trichiura'].includes(parasiteName) 
-    ? [-2.5, -2, 0] 
+  const parasiteRotation: [number, number, number] = [
+    'ascaris-lumbricoides',
+    'enterobius-vermicularis',
+    'trichuris-trichiura',
+  ].includes(parasiteName)
+    ? [-2.5, -2, 0]
     : [0, 0, 0];
 
   return (
     <Fragment>
       {/* Vista Expandida (Modal 3D Fullscreen) */}
       {isExpanded && expandedModelPath && (
-        <ExpandedModelCard 
-          isExpanded={isExpanded} 
-          setIsExpanded={setIsExpanded} 
+        <ExpandedModelCard
+          isExpanded={isExpanded}
+          setIsExpanded={setIsExpanded}
           modelPath={expandedModelPath}
           rotation={parasiteRotation}
         />
@@ -93,10 +97,8 @@ const ParasiteDetails = () => {
       {!isExpanded && (
         <div className="relative flex size-full min-h-screen flex-col bg-white font-inter">
           <div className="layout-container flex h-full grow flex-col">
-            <Navbar />
             <main className="px-10 lg:px-40 flex flex-1 justify-center py-5">
               <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
-                
                 {/* Breadcrumb */}
                 <nav className="flex flex-wrap gap-2 p-4 text-base font-medium">
                   <Link to="/library" className="text-[#5e8d81] hover:underline">
@@ -105,7 +107,7 @@ const ParasiteDetails = () => {
                   <span className="text-[#5e8d81]">/</span>
                   <span className="text-[#101816]">{name}</span>
                 </nav>
-                
+
                 {/* Encabezado */}
                 <header className="flex flex-wrap justify-between gap-3 p-4">
                   <div className="flex min-w-72 flex-col gap-3">
@@ -117,7 +119,7 @@ const ParasiteDetails = () => {
                     </p>
                   </div>
                 </header>
-                
+
                 {/* Sistema de Pestañas */}
                 <div className="pb-3">
                   <div className="flex border-b border-[#dae7e3] px-4 gap-8">
@@ -126,8 +128,8 @@ const ParasiteDetails = () => {
                         key={tab}
                         onClick={() => setActiveTab(tab)}
                         className={`flex flex-col items-center justify-center border-b-[3px] pb-[13px] pt-4 transition-all ${
-                          activeTab === tab 
-                            ? 'border-b-[#101816] text-[#101816]' 
+                          activeTab === tab
+                            ? 'border-b-[#101816] text-[#101816]'
                             : 'border-b-transparent text-[#5e8d81] hover:text-[#101816]'
                         }`}
                       >
@@ -138,13 +140,13 @@ const ParasiteDetails = () => {
                     ))}
                   </div>
                 </div>
-                
+
                 {/* Motor de Renderizado de Secciones */}
-                <SectionRendering 
-                  sections={sections} 
+                <SectionRendering
+                  sections={sections}
                   parasiteName={parasiteName}
                   scrollPositionRef={scrollPositionRef}
-                  isExpanded={isExpanded} 
+                  isExpanded={isExpanded}
                   setIsExpanded={setIsExpanded}
                   setExpandedModelPath={setExpandedModelPath}
                   parasiteRotation={parasiteRotation}
