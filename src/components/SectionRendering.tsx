@@ -24,7 +24,7 @@ const SectionRendering = ({
       suffix = '_H';
     }
 
-    return suffix ? `/models/${baseName}${suffix}.glb` : null;
+    return suffix ? `/3d_models/${baseName}${suffix}.glb` : null;
   };
 
   return (

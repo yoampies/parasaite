@@ -26,7 +26,7 @@ export default defineConfig({
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
-        globIgnores: ['**/models/**/*', '**/*.map']
+        globIgnores: ['**/3d_models/**/*', '**/*.map']
       }
     })
   ],

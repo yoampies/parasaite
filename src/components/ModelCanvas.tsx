@@ -17,7 +17,7 @@ function ModelCanvas({
     };
   }, [modelPath]);
 
-  const isAscaris = modelPath === '/models/ascaris-lumbricoides_A.glb';
+  const isAscaris = modelPath === '/3d_models/ascaris-lumbricoides_A.glb';
   const ascarisCloseUp: [number, number, number] = isAscaris ? [0, 0.5, 1] : [0, 0, 3];
   const yOffset = isAscaris ? 0.3 : 0;
 

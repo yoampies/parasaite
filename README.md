@@ -28,5 +28,5 @@
 - `src/sections/` – Main pages (Home, Scanner, Library, ParasiteDetails, etc.)
 - `src/components/` – Reusable UI components (charts, cards, uploader, etc.)
 - `src/assets/` – Constants, images, and data
-- `public/models/` – 3D parasite models (GLB)
+- `public/3d_models/` – 3D parasite models (GLB)
 - `public/images/` – Parasite and analysis images

@@ -17,7 +17,7 @@ type GLTFResult = GLTF & {
  * @param props Usamos ThreeElements['group'] que es el estándar actual de R3F v8+
  */
 export function AscarisA(props: ThreeElements['group']) {
-  const { nodes } = useGLTF('/models/ascaris-lumbricoides_A.glb') as unknown as GLTFResult;
+  const { nodes } = useGLTF('/3d_models/ascaris-lumbricoides_A.glb') as unknown as GLTFResult;
 
   return (
     <group {...props} dispose={null}>
@@ -30,4 +30,4 @@ export function AscarisA(props: ThreeElements['group']) {
   );
 }
 
-useGLTF.preload('/models/ascaris-lumbricoides_A.glb');
+useGLTF.preload('/3d_models/ascaris-lumbricoides_A.glb');
