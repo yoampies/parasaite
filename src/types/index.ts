@@ -258,9 +258,7 @@ export interface FeedbackOption {
 }
 
 export interface IBoundingBox {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  detectedParasites: IDetectedParasite[];
+  box: [number, number, number, number];
+  confidence: number;
+  classId: number;
 }
