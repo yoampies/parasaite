@@ -10,6 +10,10 @@ export const useImageAnalysisWorker = () => {
   const isWorkerBusy = useRef<boolean>(false);
   const isMounted = useRef(true);
 
+  // Referencias para persistencia anti-shake
+  const lastValidDetectionsRef = useRef<IBoundingBox[]>([]);
+  const lastDetectionTimeRef = useRef<number>(Date.now());
+
   useEffect(() => {
     isMounted.current = true;
     workerRef.current = new AnalysisWorker();
@@ -17,7 +21,33 @@ export const useImageAnalysisWorker = () => {
     workerRef.current.onmessage = (e) => {
       if (e.data.type === 'INFERENCE_SUCCESS') {
         if (isMounted.current) {
-          setDetectedParasites(e.data.results);
+          const PROTOZOARIOS_Y_BLASTOCYSTIS = [1, 2, 5]; // IDs asignados en tu modelo
+          const rawResults = e.data.results || [];
+
+          const processedResults = rawResults.map((item: IBoundingBox) => {
+            const inGreyZone =
+              PROTOZOARIOS_Y_BLASTOCYSTIS.includes(item.classId) &&
+              item.confidence >= 0.35 &&
+              item.confidence <= 0.55;
+            return { ...item, isGreyZone: inGreyZone };
+          });
+
+          // Lógica de persistencia anti-shake
+          if (processedResults.length > 0) {
+            lastValidDetectionsRef.current = processedResults;
+            lastDetectionTimeRef.current = Date.now();
+            setDetectedParasites(processedResults);
+          } else {
+            // Si viene vacío, validamos si estamos dentro de la ventana de gracia de 1.5s
+            const timeElapsed = Date.now() - lastDetectionTimeRef.current;
+            if (timeElapsed > 1500) {
+              setDetectedParasites([]);
+            } else {
+              // Mantenemos persistente las detecciones anteriores durante la transición física
+              setDetectedParasites(lastValidDetectionsRef.current);
+            }
+          }
+
           setIsLoading(false);
         }
       }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import ImageUploader from '../components/ImageUploader';
 import ScannerCard from '../components/ScannerCard';
 import RegularCard from '../components/RegularCard';
@@ -15,9 +15,13 @@ const Scanner: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const requestRef = useRef<number | undefined>(undefined);
-  const timeoutRef = useRef<number | undefined>(undefined); // Para limpiar el setTimeout
+  const timeoutRef = useRef<number | undefined>(undefined);
 
   const { processSource, detectedParasites, isLoading } = useImageAnalysisWorker();
+
+  const hasHighUncertainty = useMemo(() => {
+    return detectedParasites.some((pred) => pred.isGreyZone === true);
+  }, [detectedParasites]);
 
   // Bucle de inferencia preciso para video
   const runInferenceLoop = useCallback(() => {
@@ -69,7 +73,6 @@ const Scanner: React.FC = () => {
       sourceWidth = videoRef.current.videoWidth;
       sourceHeight = videoRef.current.videoHeight;
     } else if (inputType === 'file' && selectedImage) {
-      // Si es archivo, intentamos acoplarlo al contenedor actual
       sourceWidth = canvas.parentElement?.clientWidth || 1280;
       sourceHeight = canvas.parentElement?.clientHeight || 720;
     }
@@ -87,9 +90,6 @@ const Scanner: React.FC = () => {
     if (inputType === 'camera' && !isRecording) return;
 
     detectedParasites.forEach((pred) => {
-      // Filtrar falsos positivos por confianza baja si tu interfaz lo provee
-      // ej: if (pred.confidence && pred.confidence < 0.6) return;
-
       const x = pred.box[0] * canvas.width;
       const y = pred.box[1] * canvas.height;
       const w = (pred.box[2] - pred.box[0]) * canvas.width;
@@ -151,7 +151,6 @@ const Scanner: React.FC = () => {
 
   return (
     <div className="w-full max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-8">
-      {/* Selector de Entrada */}
       <div className="flex bg-neutral-100 p-1 rounded-xl max-w-md mx-auto shadow-inner w-full">
         <button
           onClick={() => setInputType('camera')}
@@ -171,10 +170,24 @@ const Scanner: React.FC = () => {
         </button>
       </div>
 
-      {/* Visor de Escaneo Único Compartido */}
       <div
         className={`w-full relative bg-neutral-900 rounded-2xl overflow-hidden shadow-lg flex items-center justify-center aspect-video max-h-[70vh] ${isLoading ? 'ring-2 ring-emerald-500' : ''}`}
       >
+        {hasHighUncertainty && (
+          <div className="absolute top-4 left-4 right-4 bg-amber-500/95 border border-amber-400 text-neutral-900 px-4 py-3 rounded-xl shadow-xl z-30 flex items-center gap-3 animate-pulse">
+            <span className="text-xl">⚠️</span>
+            <div className="text-left font-inter">
+              <span className="font-bold block text-xs md:text-sm uppercase tracking-wider">
+                Incertidumbre Alta Detectada
+              </span>
+              <p className="text-xs md:text-sm font-normal text-neutral-800">
+                Por favor, aumente el objetivo físico de su microscopio para verificar morfología
+                interna.
+              </p>
+            </div>
+          </div>
+        )}
+
         {inputType === 'camera' ? (
           <>
             {cameraError && (
@@ -207,11 +220,9 @@ const Scanner: React.FC = () => {
                 onFileSelect={async (file) => {
                   const objectUrl = URL.createObjectURL(file);
                   setSelectedImage(objectUrl);
-
                   const img = new Image();
                   img.src = objectUrl;
                   img.onload = () => {
-                    console.log('Scanner: Procesando imagen subida...');
                     processSource(img);
                   };
                 }}
@@ -226,7 +237,6 @@ const Scanner: React.FC = () => {
           </div>
         )}
 
-        {/* El Canvas ahora está siempre montado y disponible para dibujar encima de la foto o del video */}
         <canvas
           id="scanner-overlay"
           ref={canvasRef}
@@ -248,13 +258,9 @@ const Scanner: React.FC = () => {
         </div>
       )}
 
-      {/* Historial */}
       <div className="bg-neutral-50 p-6 rounded-2xl border border-neutral-100 flex flex-col gap-6 w-full mt-4">
         <div>
           <h3 className="text-[#101816] text-xl font-bold leading-tight">Capturas Recientes</h3>
-          <p className="text-[#5e8d81] text-sm font-normal mt-1">
-            Muestras en las últimas 24 horas
-          </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {recentImages.map((analysis) => (

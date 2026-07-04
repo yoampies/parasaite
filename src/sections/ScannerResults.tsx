@@ -14,6 +14,16 @@ import {
 import { IAnalysis, IDetectedParasite, IBoundingBox } from '../types';
 import useImageAnalysisWorker from '../hooks/UseImageAnalysisWorker';
 
+// Diccionario de mapeo clínico
+const CLASS_LABELS: Record<number, string> = {
+  0: 'Ascaris lumbricoides',
+  1: 'Giardia duodenalis',
+  2: 'Blastocystis hominis',
+  3: 'Enterobius vermicularis',
+  4: 'Necator americanus',
+  5: 'Trichuris trichiura',
+};
+
 /**
  * @description Componente de visualización de resultados diagnósticos.
  * Integra Web Worker para segmentación y OffscreenCanvas para renderizado.
@@ -35,7 +45,6 @@ function ScannerResults() {
 
   // --- 3. RECUPERACIÓN DE DATOS (Lógica restaurada) ---
   useEffect(() => {
-    // Intentamos obtener el análisis del estado de navegación (más rápido)
     const stateAnalysis = (location.state as { analysis?: IAnalysis })?.analysis;
 
     if (stateAnalysis) {
@@ -43,11 +52,9 @@ function ScannerResults() {
       return;
     }
 
-    // Si no está en el estado (ej. recarga de página), buscamos en almacenamiento local y constantes
     const localData = localStorage.getItem('recentAnalyses');
     const localAnalyses: IAnalysis[] = localData ? JSON.parse(localData) : [];
 
-    // Unificamos fuentes de datos
     const allData = [
       ...localAnalyses,
       ...recentAnalysesConstant,
@@ -60,33 +67,29 @@ function ScannerResults() {
   }, [analysisId, location.state]);
 
   // --- 4. INTEGRACIÓN DEL WORKER ---
-  // Nota: Ya no pasamos 'drawCanvas' porque el worker dibuja solo en el OffscreenCanvas
   const { detectedParasites, isLoading } = useImageAnalysisWorker(
     imageLoaded,
     analysis,
-    imgRef, // Pasamos refs para que el hook gestione el canvas transferible
+    imgRef,
     canvasRef,
     progressBarRef,
     scannerContainerRef
   );
 
-  // --- 5. LÓGICA DE AGREGACIÓN (Calcula estadísticas basadas en lo que detecta el Worker) ---
+  // --- 5. LÓGICA DE AGREGACIÓN (Corregida: Itera sobre IBoundingBox directamente) ---
   const aggregatedData = useMemo<IDetectedParasite[]>(() => {
     if (!detectedParasites || detectedParasites.length === 0) return [];
 
     const parasitesMap = (detectedParasites as IBoundingBox[]).reduce(
       (acc, currentBox) => {
-        // Asumimos que cada caja tiene al menos un parásito detectado
-        if (currentBox.detectedParasites && currentBox.detectedParasites.length > 0) {
-          const parasite = currentBox.detectedParasites[0];
-          const { label, value } = parasite;
+        const label = CLASS_LABELS[currentBox.classId] || `Especie ${currentBox.classId}`;
+        const value = currentBox.confidence;
 
-          if (acc[label]) {
-            acc[label].sum += value;
-            acc[label].count += 1;
-          } else {
-            acc[label] = { label, sum: value, count: 1 };
-          }
+        if (acc[label]) {
+          acc[label].sum += value;
+          acc[label].count += 1;
+        } else {
+          acc[label] = { label, sum: value, count: 1 };
         }
         return acc;
       },
@@ -95,7 +98,7 @@ function ScannerResults() {
 
     return Object.values(parasitesMap).map((p) => ({
       label: p.label,
-      value: Number((p.sum / p.count).toFixed(2)),
+      value: Number(((p.sum / p.count) * 100).toFixed(2)), // Porcentaje clínico
     }));
   }, [detectedParasites]);
 
@@ -106,7 +109,6 @@ function ScannerResults() {
     }
   };
 
-  // Renderizado de Error si no hay datos
   if (!analysis) {
     return (
       <Error
@@ -137,10 +139,8 @@ function ScannerResults() {
               </div>
             </header>
 
-            {/* --- VISOR DE IMAGEN Y CANVAS (CORE) --- */}
             <section className="flex w-full grow bg-white p-4" ref={scannerContainerRef}>
               <div className="w-full gap-1 overflow-hidden bg-gray-50 aspect-[3/2] rounded-lg flex relative border border-[#dae7e3] items-center justify-center">
-                {/* 1. Imagen (Capa Base) */}
                 {analysis.imgURL && (
                   <img
                     ref={imgRef}
@@ -152,14 +152,11 @@ function ScannerResults() {
                   />
                 )}
 
-                {/* 2. Canvas (Capa Superior - Transferida al Worker) */}
-                {/* Es crucial que tenga pointer-events-none para no bloquear interacciones y absolute para superponerse */}
                 <canvas
                   ref={canvasRef}
                   className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
                 />
 
-                {/* 3. Overlay de Carga */}
                 <div
                   className={`absolute inset-0 flex items-center justify-center bg-black/60 text-white backdrop-blur-sm flex-col z-20 transition-opacity duration-500 ${isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                 >
@@ -175,19 +172,16 @@ function ScannerResults() {
               </div>
             </section>
 
-            {/* Tablas de resultados cualitativos */}
             <section className="px-4 py-3">
               <h3 className="text-[#101816] text-lg font-bold leading-tight mb-4">
                 Parásitos Identificados
               </h3>
-              {/* Usamos aggregatedData calculado desde el Worker, o fallbacks al análisis estático si el worker aun no termina */}
               <Table
                 parasites={aggregatedData.length > 0 ? aggregatedData : analysis.detectedParasites}
               />
             </section>
           </div>
 
-          {/* Panel Lateral: Resumen Estadístico */}
           <aside className="layout-content-container flex flex-col w-[360px] hidden xl:flex">
             <h3 className="text-[#101816] text-lg font-bold leading-tight px-4 pb-2 pt-4">
               Distribución de Confianza

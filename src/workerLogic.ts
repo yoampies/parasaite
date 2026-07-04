@@ -25,7 +25,13 @@ export const processMicroscopicSample = (
     const randomY = getRandomNumber(0, imageHeight - randomHeight);
 
     return {
-      box: [randomX, randomY, randomWidth, randomHeight],
+      // Normalización estricta [0.0 - 1.0]
+      box: [
+        randomX / imageWidth,
+        randomY / imageHeight,
+        (randomX + randomWidth) / imageWidth, // xMax normalizado
+        (randomY + randomHeight) / imageHeight, // yMax normalizado
+      ],
       confidence: 0.9,
       classId: parasite.id ?? 0,
     };
@@ -44,14 +50,15 @@ export const drawResults = (
   ctx.font = '16px sans-serif';
 
   results.forEach((item) => {
-    // Desestructuramos el arreglo [x, y, w, h]
-    const [x, y, width, height] = item.box;
+    // Calculamos las coordenadas reales a partir de las normalizadas
+    const x = item.box[0] * ctx.canvas.width;
+    const y = item.box[1] * ctx.canvas.height;
+    const width = (item.box[2] - item.box[0]) * ctx.canvas.width;
+    const height = (item.box[3] - item.box[1]) * ctx.canvas.height;
 
     ctx.strokeStyle = '#00FF00';
     ctx.strokeRect(x, y, width, height);
 
-    // Si tu interfaz no tiene label, necesitas mapear classId a un nombre
-    // O añadir 'label' a tu interfaz IBoundingBox
     const text = `Class: ${item.classId}`;
     const textWidth = ctx.measureText(text).width;
 

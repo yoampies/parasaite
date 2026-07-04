@@ -262,4 +262,5 @@ export interface IBoundingBox {
   box: [number, number, number, number];
   confidence: number;
   classId: number;
+  isGreyZone?: boolean;
 }
