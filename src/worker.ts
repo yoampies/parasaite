@@ -1,22 +1,33 @@
 // src/worker.ts
-import { InferenceSession, Tensor } from 'onnxruntime-web';
+import { InferenceSession, Tensor, env } from 'onnxruntime-web';
 
 const ctxSelf = self as unknown as Worker;
 
 let session: InferenceSession | null = null;
 let isInitializing = false;
 
-// Iniciar sesión cargando modelo desde public/ml_model
+// Configuración global de ORT para evitar errores de MIME/CORS
+// Esto debe hacerse antes de llamar a InferenceSession.create
+env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/';
+
 async function initModel() {
   if (session || isInitializing) return;
 
   isInitializing = true;
   try {
     console.log('Worker: Cargando model.onnx...');
-    const modelUrl = new URL('/ml_model/model.onnx', self.location.origin).href;
-    session = await InferenceSession.create(modelUrl, {
+
+    // 1. Descargar el modelo
+    const response = await fetch('/ml_model/model.onnx');
+    const arrayBuffer = await response.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+
+    // 2. Inicializar la sesión solo con las opciones permitidas
+    // 'wasm' ya no va aquí, por eso daba error
+    session = await InferenceSession.create(uint8Array, {
       executionProviders: ['wasm'],
     });
+
     console.log('Worker: model.onnx cargado con éxito.');
   } catch (error) {
     console.error('Worker: Error al inicializar el modelo ONNX:', error);
