@@ -65,6 +65,11 @@ const Scanner: React.FC = () => {
     const ctx = canvas?.getContext('2d');
     if (!ctx || !canvas) return;
 
+    if (inputType === 'file' && !selectedImage) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+
     // Determinar dimensiones de origen según el tipo de entrada
     let sourceWidth = 0;
     let sourceHeight = 0;
@@ -73,8 +78,14 @@ const Scanner: React.FC = () => {
       sourceWidth = videoRef.current.videoWidth;
       sourceHeight = videoRef.current.videoHeight;
     } else if (inputType === 'file' && selectedImage) {
-      sourceWidth = canvas.parentElement?.clientWidth || 1280;
-      sourceHeight = canvas.parentElement?.clientHeight || 720;
+      const imgElement = canvas.parentElement?.querySelector('img');
+      if (imgElement) {
+        sourceWidth = imgElement.naturalWidth || imgElement.clientWidth;
+        sourceHeight = imgElement.naturalHeight || imgElement.clientHeight;
+      } else {
+        sourceWidth = canvas.parentElement?.clientWidth || 1280;
+        sourceHeight = canvas.parentElement?.clientHeight || 720;
+      }
     }
 
     if (sourceWidth && sourceHeight) {
@@ -86,7 +97,6 @@ const Scanner: React.FC = () => {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // En modo cámara, si no está grabando no dibujamos nada
     if (inputType === 'camera' && !isRecording) return;
 
     detectedParasites.forEach((pred) => {
@@ -95,21 +105,25 @@ const Scanner: React.FC = () => {
       const w = (pred.box[2] - pred.box[0]) * canvas.width;
       const h = (pred.box[3] - pred.box[1]) * canvas.height;
 
-      ctx.strokeStyle = '#10B981';
+      const isUncertain = pred.isGreyZone || hasHighUncertainty;
+      const strokeColor = isUncertain ? '#F59E0B' : '#10B981';
+
+      ctx.strokeStyle = strokeColor;
       ctx.lineWidth = 3;
       ctx.strokeRect(x, y, w, h);
 
-      ctx.font = 'bold 16px Arial';
-      const label = `Parásito ${pred.classId}`;
+      ctx.font = 'bold 14px Arial';
+
+      const label = isUncertain ? 'Posible forma parasitaria' : `Parásito ${pred.classId}`;
       const textWidth = ctx.measureText(label).width;
 
-      ctx.fillStyle = '#10B981';
+      ctx.fillStyle = strokeColor;
       ctx.fillRect(x, y > 20 ? y - 25 : y, textWidth + 10, 25);
 
       ctx.fillStyle = '#FFFFFF';
       ctx.fillText(label, x + 5, y > 20 ? y - 7 : y + 18);
     });
-  }, [detectedParasites, isRecording, inputType, selectedImage]);
+  }, [detectedParasites, isRecording, inputType, selectedImage, hasHighUncertainty]);
 
   // Control del ciclo de vida de la cámara
   useEffect(() => {
@@ -211,6 +225,11 @@ const Scanner: React.FC = () => {
                 {isRecording ? '⏹ Detener Escaneo' : '⏺ Iniciar Escaneo'}
               </button>
             </div>
+            <canvas
+              id="scanner-overlay"
+              ref={canvasRef}
+              className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
+            />
           </>
         ) : (
           <div className="w-full h-full p-4 bg-white flex items-center justify-center overflow-auto relative">
@@ -228,20 +247,22 @@ const Scanner: React.FC = () => {
                 }}
               />
             ) : (
-              <img
-                src={selectedImage}
-                alt="Muestra subida"
-                className="max-w-full max-h-full object-contain"
-              />
+              <div className="relative inline-block max-w-full max-h-full">
+                <img
+                  src={selectedImage}
+                  alt="Muestra subida"
+                  className="max-w-full max-h-[65vh] object-contain block mx-auto"
+                />
+                <canvas
+                  id="scanner-overlay"
+                  ref={canvasRef}
+                  className="absolute top-0 left-0 pointer-events-none z-10"
+                  style={{ width: '100%', height: '100%' }}
+                />
+              </div>
             )}
           </div>
         )}
-
-        <canvas
-          id="scanner-overlay"
-          ref={canvasRef}
-          className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
-        />
       </div>
 
       {inputType === 'file' && selectedImage && (

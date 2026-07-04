@@ -5,6 +5,7 @@ export interface IDetectedParasite {
   id?: number;
   label: string;
   value: number;
+  isGreyZone?: boolean;
 }
 
 export interface IAnalysis {

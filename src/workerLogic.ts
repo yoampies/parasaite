@@ -8,32 +8,32 @@ export const processMicroscopicSample = (
 ): IBoundingBox[] => {
   if (!detectedParasites || detectedParasites.length === 0) return [];
 
-  const minBoxWidth = 100;
-  const maxBoxWidth = 200;
-  const minBoxHeight = 75;
-  const maxBoxHeight = 150;
+  // Acotamos las dimensiones de las cajas
+  const boxWidth = 140;
+  const boxHeight = 110;
 
-  const getRandomNumber = (min: number, max: number): number => {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  };
+  // Forzamos un punto central común de anclaje para simular proximidad/superposición real
+  const centerX = imageWidth / 2;
+  const centerY = imageHeight / 2;
 
-  return detectedParasites.map((parasite) => {
-    const randomWidth = getRandomNumber(minBoxWidth, maxBoxWidth);
-    const randomHeight = getRandomNumber(minBoxHeight, maxBoxHeight);
+  return detectedParasites.map((parasite, index) => {
+    // El "index * 30" introduce un desfase controlado y pequeño para provocar la superposición
+    // exacta entre Parásito 1 y Parásito 3 en el centro de la muestra microscópica
+    const offsetX = index * 35 - 50;
+    const offsetY = index * 20 - 40;
 
-    const randomX = getRandomNumber(0, imageWidth - randomWidth);
-    const randomY = getRandomNumber(0, imageHeight - randomHeight);
+    const actualX = Math.max(0, Math.min(centerX + offsetX, imageWidth - boxWidth));
+    const actualY = Math.max(0, Math.min(centerY + offsetY, imageHeight - boxHeight));
 
     return {
-      // Normalización estricta [0.0 - 1.0]
       box: [
-        randomX / imageWidth,
-        randomY / imageHeight,
-        (randomX + randomWidth) / imageWidth, // xMax normalizado
-        (randomY + randomHeight) / imageHeight, // yMax normalizado
+        actualX / imageWidth,
+        actualY / imageHeight,
+        (actualX + boxWidth) / imageWidth,
+        (actualY + boxHeight) / imageHeight,
       ],
-      confidence: 0.9,
-      classId: parasite.id ?? 0,
+      confidence: parasite.isGreyZone ? 0.62 : 0.94,
+      classId: parasite.id ?? index + 1,
     };
   });
 };
