@@ -1,96 +1,76 @@
-import { useState, useEffect, RefObject, useRef, useCallback } from 'react';
-import { gsap } from 'gsap';
-import { IAnalysis, IBoundingBox, WorkerMessage } from '../types';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { IBoundingBox } from '../types';
 import AnalysisWorker from '../worker?worker';
 
-export const useImageAnalysisWorker = (
-  imageLoaded: boolean = false,
-  analysis: IAnalysis | null = null,
-  imgRef: RefObject<HTMLImageElement | null> = { current: null },
-  canvasRef: RefObject<HTMLCanvasElement | null> = { current: null },
-  progressBarRef: RefObject<HTMLDivElement | null> = { current: null },
-  scannerContainerRef: RefObject<HTMLDivElement | null> = { current: null }
-) => {
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+export const useImageAnalysisWorker = () => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [detectedParasites, setDetectedParasites] = useState<IBoundingBox[]>([]);
 
   const workerRef = useRef<Worker | null>(null);
-  const isCanvasTransferred = useRef<boolean>(false);
+  const isWorkerBusy = useRef<boolean>(false);
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    if (!workerRef.current) {
-      workerRef.current = new AnalysisWorker();
+    isMounted.current = true;
+    workerRef.current = new AnalysisWorker();
 
-      workerRef.current.onmessage = (e) => {
-        const results = e.data.results;
-        setDetectedParasites(results);
-        setIsLoading(false);
-
-        if (scannerContainerRef.current) {
-          gsap.to(scannerContainerRef.current, {
-            scale: 1,
-            duration: 0.2,
-            ease: 'back.out(1.7)',
-          });
+    workerRef.current.onmessage = (e) => {
+      if (e.data.type === 'INFERENCE_SUCCESS') {
+        if (isMounted.current) {
+          setDetectedParasites(e.data.results);
+          setIsLoading(false);
         }
-      };
-    }
-
-    const worker = workerRef.current;
-    const img = imgRef.current;
-    const canvas = canvasRef.current;
-    const progressBar = progressBarRef.current;
-
-    if (!imageLoaded || !analysis || !img || !canvas || !progressBar) return;
-
-    if (!isCanvasTransferred.current) {
-      const offscreen = canvas.transferControlToOffscreen();
-
-      worker.postMessage({ type: 'INIT_CANVAS', canvas: offscreen }, [offscreen]);
-
-      isCanvasTransferred.current = true;
-    }
-
-    setIsLoading(true);
-
-    if (scannerContainerRef.current) {
-      gsap.to(scannerContainerRef.current, { scale: 1.02, duration: 0.5 });
-    }
-    const progressTween = gsap.fromTo(
-      progressBar,
-      { width: '0%' },
-      { width: '100%', duration: 2, ease: 'power2.inOut' }
-    );
-
-    const processMsg: WorkerMessage = {
-      type: 'PROCESS_IMAGE',
-      imageWidth: img.naturalWidth,
-      imageHeight: img.naturalHeight,
-      detectedParasites: analysis.detectedParasites,
+      }
+      isWorkerBusy.current = false;
     };
-    worker.postMessage(processMsg);
+
+    workerRef.current.onerror = (err) => {
+      console.error('Worker: Error crítico detectado:', err);
+      isWorkerBusy.current = false;
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
+    };
 
     return () => {
-      progressTween.kill();
-      if (workerRef.current) {
-        workerRef.current.terminate(); // ¡Bang!
-        workerRef.current = null;
-      }
-      isCanvasTransferred.current = false;
+      isMounted.current = false;
+      workerRef.current?.terminate();
+      workerRef.current = null;
     };
-  }, [imageLoaded, analysis, imgRef, canvasRef, progressBarRef, scannerContainerRef]);
-
-  const startLiveInference = useCallback(() => {
-    // Aquí irá la lógica de enviar frames del video al worker
-    //param: video: HTMLVideoElement
   }, []);
 
-  const stopLiveInference = useCallback(() => {
-    // Aquí irá la lógica para limpiar el worker
+  // 2. PIPELINE UNIFICADO (Imagen o Video)
+  const processSource = useCallback(async (source: HTMLVideoElement | HTMLImageElement) => {
+    if (!workerRef.current || isWorkerBusy.current) return;
+
+    try {
+      isWorkerBusy.current = true;
+      setIsLoading(true);
+
+      const bitmap = await createImageBitmap(source);
+
+      // Verificación de seguridad antes de enviar
+      if (isMounted.current && workerRef.current) {
+        workerRef.current.postMessage({ type: 'PROCESS_IMAGE', imageBitmap: bitmap }, [bitmap]);
+      } else {
+        bitmap.close();
+        isWorkerBusy.current = false;
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.error('Error al procesar fuente:', err);
+      if (isMounted.current) {
+        isWorkerBusy.current = false;
+        setIsLoading(false);
+      }
+    }
   }, []);
 
-  // 3. RETORNA LAS NUEVAS FUNCIONES
-  return { detectedParasites, isLoading, startLiveInference, stopLiveInference };
+  return {
+    detectedParasites,
+    isLoading,
+    processSource,
+  };
 };
 
 export default useImageAnalysisWorker;

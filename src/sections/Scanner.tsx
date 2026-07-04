@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ImageUploader from '../components/ImageUploader';
 import ScannerCard from '../components/ScannerCard';
 import RegularCard from '../components/RegularCard';
@@ -13,17 +13,40 @@ const Scanner: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const { startLiveInference, stopLiveInference } = useImageAnalysisWorker();
+  const requestRef = useRef<number | undefined>(undefined);
 
-  // Controla el flujo de inferencia según el botón
+  // Usamos el hook refactorizado
+  const { processSource } = useImageAnalysisWorker();
+
+  // Bucle de inferencia para video
+  const runInferenceLoop = useCallback(() => {
+    if (!isRecording || !videoRef.current) return;
+
+    // Procesar fotograma actual
+    processSource(videoRef.current);
+
+    // Control de tasa (aprox 6-7 fps para salvar batería)
+    setTimeout(() => {
+      requestRef.current = requestAnimationFrame(runInferenceLoop);
+    }, 150);
+  }, [isRecording, processSource]);
+
   useEffect(() => {
-    if (isRecording && videoRef.current) {
-      startLiveInference();
-      //videoRef.current
+    if (isRecording) {
+      runInferenceLoop();
     } else {
-      stopLiveInference();
+      if (requestRef.current !== undefined) {
+        cancelAnimationFrame(requestRef.current);
+      }
     }
-  }, [isRecording, startLiveInference, stopLiveInference]);
+
+    // Limpieza al desmontar o detener grabación
+    return () => {
+      if (requestRef.current !== undefined) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, [isRecording, runInferenceLoop]);
 
   useEffect(() => {
     if (inputType === 'camera') {
@@ -113,7 +136,6 @@ const Scanner: React.FC = () => {
               className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
             />
 
-            {/* BOTÓN DE CONTROL DE GRABACIÓN */}
             <div className="absolute bottom-6 z-20">
               <button
                 onClick={() => setIsRecording(!isRecording)}
@@ -130,6 +152,7 @@ const Scanner: React.FC = () => {
               onFileSelect={(file) => {
                 const objectUrl = URL.createObjectURL(file);
                 setSelectedImage(objectUrl);
+                // Aquí podrías llamar a processSource si tuvieras una referencia a un elemento <img>
               }}
             />
           </div>
