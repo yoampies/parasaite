@@ -18,7 +18,8 @@ const Scanner: React.FC = () => {
   // Controla el flujo de inferencia según el botón
   useEffect(() => {
     if (isRecording && videoRef.current) {
-      startLiveInference(videoRef.current);
+      startLiveInference();
+      //videoRef.current
     } else {
       stopLiveInference();
     }

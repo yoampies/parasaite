@@ -80,16 +80,17 @@ export const useImageAnalysisWorker = (
     };
   }, [imageLoaded, analysis, imgRef, canvasRef, progressBarRef, scannerContainerRef]);
 
-  /*const startLiveInference = useCallback((video: HTMLVideoElement) => {
-     // Aquí irá la lógica de enviar frames del video al worker
-  }, []);*/
+  const startLiveInference = useCallback(() => {
+    // Aquí irá la lógica de enviar frames del video al worker
+    //param: video: HTMLVideoElement
+  }, []);
 
   const stopLiveInference = useCallback(() => {
     // Aquí irá la lógica para limpiar el worker
   }, []);
 
   // 3. RETORNA LAS NUEVAS FUNCIONES
-  return { detectedParasites, isLoading, stopLiveInference };
+  return { detectedParasites, isLoading, startLiveInference, stopLiveInference };
 };
 
 export default useImageAnalysisWorker;
