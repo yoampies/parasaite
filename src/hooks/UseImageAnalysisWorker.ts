@@ -1,15 +1,15 @@
-import { useState, useEffect, RefObject, useRef } from 'react';
+import { useState, useEffect, RefObject, useRef, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { IAnalysis, IBoundingBox, WorkerMessage } from '../types';
 import AnalysisWorker from '../worker?worker';
 
-const useImageAnalysisWorker = (
-  imageLoaded: boolean,
-  analysis: IAnalysis | null,
-  imgRef: RefObject<HTMLImageElement | null>,
-  canvasRef: RefObject<HTMLCanvasElement | null>,
-  progressBarRef: RefObject<HTMLDivElement | null>,
-  scannerContainerRef: RefObject<HTMLDivElement | null>
+export const useImageAnalysisWorker = (
+  imageLoaded: boolean = false,
+  analysis: IAnalysis | null = null,
+  imgRef: RefObject<HTMLImageElement | null> = { current: null },
+  canvasRef: RefObject<HTMLCanvasElement | null> = { current: null },
+  progressBarRef: RefObject<HTMLDivElement | null> = { current: null },
+  scannerContainerRef: RefObject<HTMLDivElement | null> = { current: null }
 ) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [detectedParasites, setDetectedParasites] = useState<IBoundingBox[]>([]);
@@ -80,7 +80,16 @@ const useImageAnalysisWorker = (
     };
   }, [imageLoaded, analysis, imgRef, canvasRef, progressBarRef, scannerContainerRef]);
 
-  return { detectedParasites, isLoading };
+  /*const startLiveInference = useCallback((video: HTMLVideoElement) => {
+     // Aquí irá la lógica de enviar frames del video al worker
+  }, []);*/
+
+  const stopLiveInference = useCallback(() => {
+    // Aquí irá la lógica para limpiar el worker
+  }, []);
+
+  // 3. RETORNA LAS NUEVAS FUNCIONES
+  return { detectedParasites, isLoading, stopLiveInference };
 };
 
 export default useImageAnalysisWorker;
