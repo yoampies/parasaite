@@ -2,7 +2,7 @@ import { ReactNode, Dispatch, SetStateAction, MutableRefObject } from 'react';
 import * as THREE from 'three';
 
 export interface IDetectedParasite {
-  id: number;
+  id?: number;
   label: string;
   value: number;
 }

@@ -27,7 +27,7 @@ export const processMicroscopicSample = (
     return {
       box: [randomX, randomY, randomWidth, randomHeight],
       confidence: 0.9,
-      classId: parasite.id,
+      classId: parasite.id ?? 0,
     };
   });
 };
