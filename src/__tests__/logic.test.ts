@@ -15,21 +15,32 @@ describe('Worker Logic: Parasite Segmentation', () => {
 
     for (let i = 0; i < 100; i++) {
       const results = processMicroscopicSample(width, height, mockParasites);
-      const box = results[0];
+      const item = results[0];
 
-      expect(box.x).toBeGreaterThanOrEqual(0);
-      expect(box.y).toBeGreaterThanOrEqual(0);
-      expect(box.x + box.width).toBeLessThanOrEqual(width);
-      expect(box.y + box.height).toBeLessThanOrEqual(height);
+      const x1 = item.box[0] * width;
+      const y1 = item.box[1] * height;
+      const x2 = item.box[2] * width;
+      const y2 = item.box[3] * height;
+
+      expect(x1).toBeGreaterThanOrEqual(0);
+      expect(y1).toBeGreaterThanOrEqual(0);
+      expect(x2).toBeLessThanOrEqual(width);
+      expect(y2).toBeLessThanOrEqual(height);
     }
   });
 
   it('debe generar dimensiones de caja dentro del rango esperado', () => {
-    const results = processMicroscopicSample(1000, 1000, [{ label: 'Test', value: 100 }]);
-    const box = results[0];
+    const width = 1000;
+    const height = 1000;
+    const results = processMicroscopicSample(width, height, [{ label: 'Test', value: 100 }]);
+    const item = results[0];
 
-    expect(box.width).toBeGreaterThanOrEqual(100);
-    expect(box.width).toBeLessThanOrEqual(200);
+    // Calculamos el ancho real a partir de los límites normalizados
+    const boxWidth = (item.box[2] - item.box[0]) * width;
+
+    // En workerLogic asignas de manera fija boxWidth = 140
+    expect(boxWidth).toBeGreaterThanOrEqual(100);
+    expect(boxWidth).toBeLessThanOrEqual(200);
   });
 });
 
