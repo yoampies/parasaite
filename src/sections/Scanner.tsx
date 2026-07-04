@@ -21,9 +21,13 @@ const Scanner: React.FC = () => {
 
   // Bucle de inferencia para video
   const runInferenceLoop = useCallback(() => {
-    if (!isRecording || !videoRef.current) return;
-
+    if (!isRecording || !videoRef.current) {
+      console.log('Scanner: Bucle parado. Recording:', isRecording, 'Video:', !!videoRef.current);
+      return;
+    }
+    console.log('Scanner: Llamando a processSource...');
     processSource(videoRef.current);
+    console.log('Scanner: Iniciando procesamiento de imagen...');
 
     setTimeout(() => {
       requestRef.current = requestAnimationFrame(runInferenceLoop);
@@ -208,9 +212,17 @@ const Scanner: React.FC = () => {
           <div className="w-full h-full p-4 bg-white flex items-center justify-center overflow-auto">
             <ImageUploader
               instruction="Análisis estático de muestras"
-              onFileSelect={(file) => {
+              onFileSelect={async (file) => {
                 const objectUrl = URL.createObjectURL(file);
                 setSelectedImage(objectUrl);
+
+                // CREAR IMAGEN PARA PROCESAR
+                const img = new Image();
+                img.src = objectUrl;
+                img.onload = () => {
+                  console.log('Scanner: Procesando imagen subida...');
+                  processSource(img); // Esto disparará la inferencia una sola vez
+                };
               }}
             />
           </div>

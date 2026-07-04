@@ -25,11 +25,9 @@ export const processMicroscopicSample = (
     const randomY = getRandomNumber(0, imageHeight - randomHeight);
 
     return {
-      x: randomX,
-      y: randomY,
-      width: randomWidth,
-      height: randomHeight,
-      detectedParasites: [parasite],
+      box: [randomX, randomY, randomWidth, randomHeight],
+      confidence: 0.9,
+      classId: parasite.id,
     };
   });
 };
@@ -45,17 +43,22 @@ export const drawResults = (
   ctx.lineWidth = 3;
   ctx.font = '16px sans-serif';
 
-  results.forEach((box) => {
-    ctx.strokeStyle = '#00FF00';
-    ctx.strokeRect(box.x, box.y, box.width, box.height);
+  results.forEach((item) => {
+    // Desestructuramos el arreglo [x, y, w, h]
+    const [x, y, width, height] = item.box;
 
-    const text = box.detectedParasites[0].label;
+    ctx.strokeStyle = '#00FF00';
+    ctx.strokeRect(x, y, width, height);
+
+    // Si tu interfaz no tiene label, necesitas mapear classId a un nombre
+    // O añadir 'label' a tu interfaz IBoundingBox
+    const text = `Class: ${item.classId}`;
     const textWidth = ctx.measureText(text).width;
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillRect(box.x, box.y - 20, textWidth + 10, 20);
+    ctx.fillRect(x, y - 20, textWidth + 10, 20);
 
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(text, box.x + 5, box.y - 5);
+    ctx.fillText(text, x + 5, y - 5);
   });
 };

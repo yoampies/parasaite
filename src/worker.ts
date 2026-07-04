@@ -48,11 +48,15 @@ ctxSelf.onmessage = async (e: MessageEvent<any>) => {
   }
 
   if (msg.type === 'PROCESS_IMAGE') {
+    console.log('Worker: Mensaje recibido con tipo:', e.data.type);
     if (!session) {
       console.warn('Worker: El modelo ONNX aún no está listo.');
       // Intentar re-inicializar si por algún motivo no cargó antes
       await initModel();
-      if (!session) return;
+      if (!session) {
+        console.warn('Worker: El modelo ONNX aún no está listo. Estado de init:', isInitializing);
+        return;
+      }
     }
 
     const { imageBitmap } = msg;
@@ -87,6 +91,7 @@ ctxSelf.onmessage = async (e: MessageEvent<any>) => {
       feeds[session.inputNames[0]] = inputTensor;
 
       const resultsSession = await session.run(feeds);
+      console.log('Worker: Inferencia ejecutada correctamente.');
       const outputTensor = resultsSession[outputNames[0]];
 
       const outputData = outputTensor.data as Float32Array;
@@ -155,8 +160,9 @@ ctxSelf.onmessage = async (e: MessageEvent<any>) => {
         type: 'INFERENCE_SUCCESS',
         results: finalDetections,
       });
+      console.log('Worker: Inferencia finalizada. Número de detecciones:', finalDetections.length);
     } catch (inferenceError) {
-      console.error('Worker: Error durante la inferencia ONNX:', inferenceError);
+      console.error('Worker: Error detallado durante la inferencia:', inferenceError);
     }
   }
 };

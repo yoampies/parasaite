@@ -41,16 +41,25 @@ export const useImageAnalysisWorker = () => {
 
   // 2. PIPELINE UNIFICADO (Imagen o Video)
   const processSource = useCallback(async (source: HTMLVideoElement | HTMLImageElement) => {
-    if (!workerRef.current || isWorkerBusy.current) return;
+    if (!workerRef.current || isWorkerBusy.current) {
+      if (!workerRef.current) {
+        console.error('Hook: workerRef.current es nulo. El worker no se ha inicializado.');
+      }
+      return;
+    }
 
     try {
       isWorkerBusy.current = true;
       setIsLoading(true);
 
       const bitmap = await createImageBitmap(source);
+      console.log(
+        `Hook: Bitmap creado correctamente. Dimensiones: ${bitmap.width}x${bitmap.height}`
+      );
 
       // Verificación de seguridad antes de enviar
       if (isMounted.current && workerRef.current) {
+        console.log('Hook: Enviando imagen al worker...');
         workerRef.current.postMessage({ type: 'PROCESS_IMAGE', imageBitmap: bitmap }, [bitmap]);
       } else {
         bitmap.close();
