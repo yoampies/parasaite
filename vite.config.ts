@@ -13,7 +13,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg', 's_models/*.glb'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg', 's_models/*.glb', 'ml_model/model.onnx'], 
       manifest: {
         name: 'ParasAIte',
         short_name: 'ParasAIte',
@@ -26,10 +26,20 @@ export default defineConfig({
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,onnx,wasm}'],
         globIgnores: ['**/3d_models/**/*', '**/*.map']
       }
     })
   ],
+  server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+    fs: {
+      strict: true,
+    }
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

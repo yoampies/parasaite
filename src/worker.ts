@@ -4,19 +4,24 @@ import { InferenceSession, Tensor } from 'onnxruntime-web';
 const ctxSelf = self as unknown as Worker;
 
 let session: InferenceSession | null = null;
+let isInitializing = false;
 
 // Iniciar sesión cargando modelo desde public/ml_model
 async function initModel() {
+  if (session || isInitializing) return;
+
+  isInitializing = true;
   try {
-    if (!session) {
-      console.log('Worker: Cargando model.onnx...');
-      session = await InferenceSession.create('/ml_model/model.onnx', {
-        executionProviders: ['wasm'],
-      });
-      console.log('Worker: model.onnx cargado con éxito.');
-    }
+    console.log('Worker: Cargando model.onnx...');
+    const modelUrl = new URL('/ml_model/model.onnx', self.location.origin).href;
+    session = await InferenceSession.create(modelUrl, {
+      executionProviders: ['wasm'],
+    });
+    console.log('Worker: model.onnx cargado con éxito.');
   } catch (error) {
     console.error('Worker: Error al inicializar el modelo ONNX:', error);
+  } finally {
+    isInitializing = false;
   }
 }
 
@@ -34,7 +39,9 @@ ctxSelf.onmessage = async (e: MessageEvent<any>) => {
   if (msg.type === 'PROCESS_IMAGE') {
     if (!session) {
       console.warn('Worker: El modelo ONNX aún no está listo.');
-      return;
+      // Intentar re-inicializar si por algún motivo no cargó antes
+      await initModel();
+      if (!session) return;
     }
 
     const { imageBitmap } = msg;
@@ -104,7 +111,6 @@ ctxSelf.onmessage = async (e: MessageEvent<any>) => {
           const w = outputData[2 * numCandidates + c];
           const h = outputData[3 * numCandidates + c];
 
-          // Convertir a coordenadas [0, 1] normalizadas (dividiendo por targetSize=640)
           const x_min = Math.max(0, (cx - w / 2) / targetSize);
           const y_min = Math.max(0, (cy - h / 2) / targetSize);
           const x_max = Math.min(1, (cx + w / 2) / targetSize);

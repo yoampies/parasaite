@@ -101,13 +101,15 @@ const Scanner: React.FC = () => {
     });
   }, [detectedParasites, isRecording]);
 
+  // Manejo de la cámara y limpieza de recursos
   useEffect(() => {
+    stopCamera();
+
     if (inputType === 'camera') {
       startCamera();
       setSelectedImage(null);
-    } else {
-      stopCamera();
     }
+
     return () => {
       stopCamera();
     };
@@ -137,7 +139,10 @@ const Scanner: React.FC = () => {
   function stopCamera() {
     setIsRecording(false);
     if (cameraStream) {
-      cameraStream.getTracks().forEach((track) => track.stop());
+      cameraStream.getTracks().forEach((track) => {
+        track.stop();
+        track.enabled = false;
+      });
       setStream(null);
     }
     if (videoRef.current) {
