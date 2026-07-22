@@ -1,4 +1,4 @@
-// src/worker.ts
+// src/workers/worker
 import { InferenceSession, Tensor, env } from 'onnxruntime-web';
 
 const ctxSelf = self as unknown as Worker;

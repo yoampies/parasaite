@@ -1,114 +1,163 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { IBoundingBox } from '../types';
-import AnalysisWorker from '../worker?worker';
 
 export const useImageAnalysisWorker = () => {
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isModelLoading, setIsModelLoading] = useState<boolean>(true);
+  const [isDetecting, setIsDetecting] = useState<boolean>(false);
   const [detectedParasites, setDetectedParasites] = useState<IBoundingBox[]>([]);
 
   const workerRef = useRef<Worker | null>(null);
   const isWorkerBusy = useRef<boolean>(false);
-  const isMounted = useRef(true);
+  const isMounted = useRef<boolean>(true);
 
-  // Referencias para persistencia anti-shake
   const lastValidDetectionsRef = useRef<IBoundingBox[]>([]);
   const lastDetectionTimeRef = useRef<number>(Date.now());
 
+  const clearDetections = useCallback(() => {
+    lastValidDetectionsRef.current = [];
+    lastDetectionTimeRef.current = 0;
+    setDetectedParasites([]);
+  }, []);
+
   useEffect(() => {
     isMounted.current = true;
-    workerRef.current = new AnalysisWorker();
+    setIsModelLoading(true);
 
-    workerRef.current.onmessage = (e) => {
-      if (e.data.type === 'INFERENCE_SUCCESS') {
-        if (isMounted.current) {
-          const PROTOZOARIOS_Y_BLASTOCYSTIS = [1, 2, 5]; // IDs asignados en tu modelo
-          const rawResults = e.data.results || [];
+    const newWorker = new Worker(new URL('../workers/yoloWorker.ts', import.meta.url), {
+      type: 'module',
+    });
+    workerRef.current = newWorker;
 
-          const processedResults = rawResults.map((item: IBoundingBox) => {
-            const inGreyZone =
-              PROTOZOARIOS_Y_BLASTOCYSTIS.includes(item.classId) &&
-              item.confidence >= 0.35 &&
-              item.confidence <= 0.55;
-            return { ...item, isGreyZone: inGreyZone };
-          });
+    newWorker.postMessage({
+      type: 'INIT',
+      payload: { modelPath: '/ml_model/model.onnx' },
+    });
 
-          // Lógica de persistencia anti-shake
-          if (processedResults.length > 0) {
-            lastValidDetectionsRef.current = processedResults;
-            lastDetectionTimeRef.current = Date.now();
-            setDetectedParasites(processedResults);
+    newWorker.onmessage = (e) => {
+      if (!isMounted.current) return;
+
+      const { type, payload } = e.data;
+
+      if (type === 'READY') {
+        setIsModelLoading(false);
+      } else if (type === 'RESULT') {
+        const PROTOZOARIOS_Y_BLASTOCYSTIS = [1, 2, 5];
+        const rawResults = payload || [];
+
+        const processedResults = rawResults.map((item: IBoundingBox) => {
+          const inGreyZone =
+            PROTOZOARIOS_Y_BLASTOCYSTIS.includes(item.classId) &&
+            item.confidence >= 0.35 &&
+            item.confidence <= 0.55;
+          return { ...item, isGreyZone: inGreyZone };
+        });
+
+        if (processedResults.length > 0) {
+          lastValidDetectionsRef.current = processedResults;
+          lastDetectionTimeRef.current = Date.now();
+          setDetectedParasites(processedResults);
+        } else {
+          const timeElapsed = Date.now() - lastDetectionTimeRef.current;
+          if (timeElapsed > 1500) {
+            setDetectedParasites([]);
           } else {
-            // Si viene vacío, validamos si estamos dentro de la ventana de gracia de 1.5s
-            const timeElapsed = Date.now() - lastDetectionTimeRef.current;
-            if (timeElapsed > 1500) {
-              setDetectedParasites([]);
-            } else {
-              // Mantenemos persistente las detecciones anteriores durante la transición física
-              setDetectedParasites(lastValidDetectionsRef.current);
-            }
+            setDetectedParasites(lastValidDetectionsRef.current);
           }
-
-          setIsLoading(false);
         }
+
+        setIsDetecting(false);
+        isWorkerBusy.current = false;
+      } else if (type === 'ERROR') {
+        console.error('Worker: Error crítico detectado:', payload);
+        setIsDetecting(false);
+        isWorkerBusy.current = false;
       }
-      isWorkerBusy.current = false;
     };
 
-    workerRef.current.onerror = (err) => {
-      console.error('Worker: Error crítico detectado:', err);
-      isWorkerBusy.current = false;
+    newWorker.onerror = (err) => {
+      console.error('Worker: Error de ejecución en el hilo secundario:', err);
       if (isMounted.current) {
-        setIsLoading(false);
+        setIsModelLoading(false);
+        setIsDetecting(false);
+        isWorkerBusy.current = false;
       }
     };
 
     return () => {
       isMounted.current = false;
-      workerRef.current?.terminate();
+      newWorker.terminate();
       workerRef.current = null;
     };
   }, []);
 
-  // 2. PIPELINE UNIFICADO (Imagen o Video)
-  const processSource = useCallback(async (source: HTMLVideoElement | HTMLImageElement) => {
-    if (!workerRef.current || isWorkerBusy.current) {
-      if (!workerRef.current) {
-        console.error('Hook: workerRef.current es nulo. El worker no se ha inicializado.');
+  const processSource = useCallback(
+    async (source: HTMLVideoElement | HTMLImageElement) => {
+      if (!workerRef.current || isWorkerBusy.current || isModelLoading) {
+        return;
       }
-      return;
-    }
 
-    try {
-      isWorkerBusy.current = true;
-      setIsLoading(true);
+      try {
+        isWorkerBusy.current = true;
+        setIsDetecting(true);
 
-      const bitmap = await createImageBitmap(source);
-      console.log(
-        `Hook: Bitmap creado correctamente. Dimensiones: ${bitmap.width}x${bitmap.height}`
-      );
+        const targetSize = 640;
+        const canvas = document.createElement('canvas');
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+        const ctx = canvas.getContext('2d');
 
-      // Verificación de seguridad antes de enviar
-      if (isMounted.current && workerRef.current) {
-        console.log('Hook: Enviando imagen al worker...');
-        workerRef.current.postMessage({ type: 'PROCESS_IMAGE', imageBitmap: bitmap }, [bitmap]);
-      } else {
-        bitmap.close();
-        isWorkerBusy.current = false;
-        setIsLoading(false);
+        if (!ctx) {
+          throw new Error('No se pudo obtener el contexto 2D del canvas de preprocesamiento.');
+        }
+
+        ctx.drawImage(source, 0, 0, targetSize, targetSize);
+        const imageData = ctx.getImageData(0, 0, targetSize, targetSize);
+
+        const pixels = imageData.data;
+        const floatArray = new Float32Array(targetSize * targetSize * 3);
+
+        let idx = 0;
+        const totalPixels = targetSize * targetSize;
+        for (let i = 0; i < totalPixels; i++) {
+          floatArray[i] = pixels[idx] / 255.0;
+          floatArray[i + totalPixels] = pixels[idx + 1] / 255.0;
+          floatArray[i + totalPixels * 2] = pixels[idx + 2] / 255.0;
+          idx += 4;
+        }
+
+        if (isMounted.current && workerRef.current) {
+          workerRef.current.postMessage(
+            {
+              type: 'PREDICT',
+              payload: {
+                floatArray: floatArray,
+                dims: [1, 3, targetSize, targetSize],
+              },
+            },
+            [floatArray.buffer]
+          );
+        } else {
+          isWorkerBusy.current = false;
+          setIsDetecting(false);
+        }
+      } catch (err) {
+        console.error('Error al procesar fuente en el hook:', err);
+        if (isMounted.current) {
+          isWorkerBusy.current = false;
+          setIsDetecting(false);
+        }
       }
-    } catch (err) {
-      console.error('Error al procesar fuente:', err);
-      if (isMounted.current) {
-        isWorkerBusy.current = false;
-        setIsLoading(false);
-      }
-    }
-  }, []);
+    },
+    [isModelLoading]
+  );
 
   return {
     detectedParasites,
-    isLoading,
+    isLoading: isModelLoading || isDetecting,
+    isModelLoading,
+    isDetecting,
     processSource,
+    clearDetections,
   };
 };
 

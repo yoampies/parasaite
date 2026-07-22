@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { processMicroscopicSample } from '../workerLogic';
+import { processMicroscopicSample } from '../workers/workerLogic';
 import { recentAnalyses } from '../assets/constants';
 
 describe('Worker Logic: Parasite Segmentation', () => {

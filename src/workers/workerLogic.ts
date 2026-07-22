@@ -1,5 +1,5 @@
-// src/workerLogic.ts
-import { IBoundingBox, IDetectedParasite } from './types';
+// src/workers/workerLogic.ts
+import { IBoundingBox, IDetectedParasite } from '../types';
 
 export const processMicroscopicSample = (
   imageWidth: number,
