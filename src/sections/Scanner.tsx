@@ -19,9 +19,10 @@ const Scanner: React.FC = () => {
   const requestRef = useRef<number | undefined>(undefined);
   const timeoutRef = useRef<number | undefined>(undefined);
 
-  const { processSource, detectedParasites, isLoading, isModelLoading, clearDetections } =
+  const { processSource, detectedParasites, isModelLoading, isDetecting, clearDetections } =
     useImageAnalysisWorker();
 
+  // 1. Manejo global de errores de memoria (OOM)
   useEffect(() => {
     const handleGlobalError = (event: ErrorEvent) => {
       if (
@@ -43,11 +44,9 @@ const Scanner: React.FC = () => {
     return detectedParasites.some((pred) => pred.isGreyZone === true);
   }, [detectedParasites]);
 
+  // 2. Bucle de inferencia para video en vivo
   const runInferenceLoop = useCallback(() => {
-    if (!isRecording || !videoRef.current) {
-      console.log('Scanner: Bucle parado.');
-      return;
-    }
+    if (!isRecording || !videoRef.current) return;
 
     processSource(videoRef.current);
 
@@ -76,7 +75,7 @@ const Scanner: React.FC = () => {
     };
   }, [isRecording, runInferenceLoop]);
 
-  // Dibujar predicciones alineadas milimétricamente al contenedor visible
+  // 3. Dibujar detecciones sobre el canvas
   const drawDetections = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -98,18 +97,20 @@ const Scanner: React.FC = () => {
       displayHeight = imageRef.current.clientHeight;
     }
 
-    if (displayWidth && displayHeight) {
+    if (displayWidth > 0 && displayHeight > 0) {
       if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
         canvas.width = displayWidth;
         canvas.height = displayHeight;
       }
+    } else {
+      return;
     }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (inputType === 'camera' && !isRecording) return;
 
-    if (Array.isArray(detectedParasites)) {
+    if (Array.isArray(detectedParasites) && detectedParasites.length > 0) {
       detectedParasites.forEach((pred) => {
         if (!pred?.box || pred.box.length < 4) return;
 
@@ -140,12 +141,22 @@ const Scanner: React.FC = () => {
     }
   }, [detectedParasites, isRecording, inputType, selectedImage, hasHighUncertainty]);
 
+  // Dibujar automáticamente al cambiar detecciones o cambiar tamaño
   useEffect(() => {
     drawDetections();
     window.addEventListener('resize', drawDetections);
     return () => window.removeEventListener('resize', drawDetections);
   }, [drawDetections]);
 
+  // 4. Disparar inferencia cuando la imagen esté completamente cargada en el DOM
+  const handleImageLoad = () => {
+    drawDetections();
+    if (imageRef.current && !isModelLoading) {
+      processSource(imageRef.current);
+    }
+  };
+
+  // Limpieza al cambiar entre Cámara y Archivo
   useEffect(() => {
     stopCamera();
     clearDetections();
@@ -194,11 +205,6 @@ const Scanner: React.FC = () => {
 
     const objectUrl = URL.createObjectURL(file);
     setSelectedImage(objectUrl);
-    const img = new Image();
-    img.src = objectUrl;
-    img.onload = () => {
-      processSource(img);
-    };
   };
 
   return (
@@ -219,15 +225,6 @@ const Scanner: React.FC = () => {
               Entendido
             </button>
           </div>
-        </div>
-      )}
-
-      {isModelLoading && (
-        <div className="absolute inset-0 bg-neutral-900/80 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-4 text-center rounded-2xl">
-          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-white text-sm md:text-base font-medium">
-            Cargando modelo de IA optimizado para móvil...
-          </p>
         </div>
       )}
 
@@ -259,8 +256,15 @@ const Scanner: React.FC = () => {
       <div
         className={`w-full relative bg-neutral-900 rounded-2xl overflow-hidden shadow-lg flex items-center justify-center ${
           inputType === 'camera' ? 'aspect-video max-h-[70vh]' : 'min-h-[300px] max-h-[70vh] p-4'
-        } ${isLoading ? 'ring-2 ring-emerald-500' : ''}`}
+        } ${isDetecting ? 'ring-2 ring-emerald-500' : ''}`}
       >
+        {isModelLoading && (
+          <div className="absolute inset-0 bg-neutral-900/90 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-4 text-center">
+            <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+            <p className="text-white text-sm font-medium">Cargando modelo de detección...</p>
+          </div>
+        )}
+
         {hasHighUncertainty && (
           <div className="absolute top-4 left-4 right-4 bg-amber-500/95 border border-amber-400 text-neutral-900 px-4 py-3 rounded-xl shadow-xl z-30 flex items-center gap-3">
             <span className="text-xl">⚠️</span>
@@ -322,7 +326,7 @@ const Scanner: React.FC = () => {
                   ref={imageRef}
                   src={selectedImage}
                   alt="Muestra subida"
-                  onLoad={drawDetections}
+                  onLoad={handleImageLoad}
                   className="max-w-full max-h-[65vh] object-contain block rounded-lg"
                 />
                 <canvas
