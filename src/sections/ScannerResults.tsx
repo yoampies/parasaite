@@ -13,6 +13,8 @@ import {
 } from '../assets/constants';
 import { IAnalysis, IDetectedParasite, IBoundingBox } from '../types';
 import useImageAnalysisWorker from '../hooks/UseImageAnalysisWorker';
+import { useHistoryStore } from '../hooks/UseHistoryStore';
+import { db } from '../db/localDB';
 
 // Diccionario de mapeo clínico
 const CLASS_LABELS: Record<number, string> = {
@@ -26,52 +28,168 @@ const CLASS_LABELS: Record<number, string> = {
 
 /**
  * @description Componente de visualización de resultados diagnósticos.
- * Integra Web Worker para segmentación y OffscreenCanvas para renderizado.
+ * Recupera la muestra desde Dexie.js, procesa la inferencia morfológica con YOLOv8
+ * y actualiza el diagnóstico en la base de datos local al finalizar.
  */
 function ScannerResults() {
   const { analysisId } = useParams<{ analysisId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
 
+  const loadFrameForDiagnosis = useHistoryStore((state) => state.loadFrameForDiagnosis);
+
   // --- 1. ESTADO ---
   const [analysis, setAnalysis] = useState<IAnalysis | null>(null);
-  // Se ignora el valor leal con '_' para evitar el error de variable no leída de ESLint/TS,
-  // pero manteniendo el handler de carga activa si se requiere más adelante.
-  const [, setImageLoaded] = useState<boolean>(false);
+  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
+  const [isFetchingLocal, setIsFetchingLocal] = useState<boolean>(true);
 
-  // --- 2. REFS PARA WORKER ---
+  // --- 2. REFS PARA PROCESAMIENTO Y CANVAS ---
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  const progressBarRef = useRef<HTMLDivElement>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
 
-  // --- 3. RECUPERACIÓN DE DATOS ---
+  // --- 3. RECUPERACIÓN DE LA MUESTRA DESDE DEXIE ---
   useEffect(() => {
-    const stateAnalysis = (location.state as { analysis?: IAnalysis })?.analysis;
+    let activeObjectUrl: string | null = null;
 
-    if (stateAnalysis) {
-      setAnalysis(stateAnalysis);
-      return;
+    const fetchAnalysisData = async () => {
+      setIsFetchingLocal(true);
+
+      // A) Comprobar si el análisis viene por state de react-router
+      const stateAnalysis = (location.state as { analysis?: IAnalysis })?.analysis;
+      if (stateAnalysis) {
+        setAnalysis(stateAnalysis);
+        setIsFetchingLocal(false);
+        return;
+      }
+
+      // B) Consultar directamente en Dexie por ID
+      if (analysisId && !isNaN(Number(analysisId))) {
+        const idNum = Number(analysisId);
+        try {
+          const diagRecord = await db.diagnoses.get(idNum);
+          if (diagRecord) {
+            const blob = await loadFrameForDiagnosis(idNum);
+            activeObjectUrl = blob ? URL.createObjectURL(blob) : '';
+
+            const mappedAnalysis: IAnalysis = {
+              id: diagRecord.id || idNum,
+              date: diagRecord.date,
+              content: diagRecord.parasiteFound || 'Análisis en curso...',
+              imgURL: activeObjectUrl,
+              detectedParasites: [],
+              fileName: `muestra_${diagRecord.id || idNum}.jpg`,
+            };
+
+            setAnalysis(mappedAnalysis);
+            setIsFetchingLocal(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Error al leer diagnóstico desde Dexie:', error);
+        }
+      }
+
+      // C) Fallback a LocalStorage o Mocks
+      const localData = localStorage.getItem('recentAnalyses');
+      const localAnalyses: IAnalysis[] = localData ? JSON.parse(localData) : [];
+
+      const allData = [
+        ...localAnalyses,
+        ...recentAnalysesConstant,
+        ...recentImagesConstant,
+      ] as IAnalysis[];
+
+      const foundAnalysis = allData.find((a) => a.id.toString() === analysisId);
+      setAnalysis(foundAnalysis || null);
+      setIsFetchingLocal(false);
+    };
+
+    fetchAnalysisData();
+
+    return () => {
+      if (activeObjectUrl) {
+        URL.revokeObjectURL(activeObjectUrl);
+      }
+    };
+  }, [analysisId, location.state, loadFrameForDiagnosis]);
+
+  // --- 4. HOOK DEL WORKER DE IA ---
+  const { detectedParasites, isLoading, processSource } = useImageAnalysisWorker();
+
+  // --- 5. INFERENCIA CON YOLOV8 AL CARGAR LA IMAGEN EN EL DOM ---
+  useEffect(() => {
+    if (imageLoaded && imgRef.current) {
+      processSource(imgRef.current);
+    }
+  }, [imageLoaded, processSource]);
+
+  // --- 6. DIBUJAR BOUNDING BOXES EN EL CANVAS ---
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const img = imgRef.current;
+    if (!canvas || !img) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Sincronizar dimensiones del canvas con el elemento de imagen renderizado
+    canvas.width = img.clientWidth;
+    canvas.height = img.clientHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!detectedParasites || detectedParasites.length === 0) return;
+
+    // Calcular el área de renderizado real de la imagen considerando CSS `object-contain`
+    const imgRatio = img.naturalWidth / img.naturalHeight;
+    const containerRatio = canvas.width / canvas.height;
+
+    let renderWidth = canvas.width;
+    let renderHeight = canvas.height;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    if (containerRatio > imgRatio) {
+      renderWidth = canvas.height * imgRatio;
+      offsetX = (canvas.width - renderWidth) / 2;
+    } else {
+      renderHeight = canvas.width / imgRatio;
+      offsetY = (canvas.height - renderHeight) / 2;
     }
 
-    const localData = localStorage.getItem('recentAnalyses');
-    const localAnalyses: IAnalysis[] = localData ? JSON.parse(localData) : [];
+    // Escalas de proyección desde la resolución nativa de la imagen original hacia el viewport
+    const scaleX = renderWidth / img.naturalWidth;
+    const scaleY = renderHeight / img.naturalHeight;
 
-    const allData = [
-      ...localAnalyses,
-      ...recentAnalysesConstant,
-      ...recentImagesConstant,
-    ] as IAnalysis[];
+    detectedParasites.forEach((item) => {
+      // Formato proveniente del worker: [rawX_px, rawY_px, rawW_px, rawH_px]
+      const [rawX, rawY, rawW, rawH] = item.box;
 
-    const foundAnalysis = allData.find((a) => a.id.toString() === analysisId);
+      const x = offsetX + rawX * scaleX;
+      const y = offsetY + rawY * scaleY;
+      const w = rawW * scaleX;
+      const h = rawH * scaleY;
 
-    setAnalysis(foundAnalysis || null);
-  }, [analysisId, location.state]);
+      // Color del borde de la caja
+      ctx.strokeStyle = item.isGreyZone ? '#f59e0b' : '#00c795';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, y, w, h);
 
-  // --- 4. INTEGRACIÓN DEL WORKER ---
-  const { detectedParasites, isLoading } = useImageAnalysisWorker();
+      // Dibujar etiqueta
+      const label = `${CLASS_LABELS[item.classId] || 'Parásito'} ${(item.confidence * 100).toFixed(0)}%`;
+      ctx.fillStyle = item.isGreyZone ? '#f59e0b' : '#00c795';
+      ctx.font = 'bold 12px Inter, sans-serif';
+      const textWidth = ctx.measureText(label).width;
 
-  // --- 5. LÓGICA DE AGREGACIÓN ---
+      const labelY = y > 22 ? y - 22 : y;
+      ctx.fillRect(x, labelY, textWidth + 10, 20);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(label, x + 5, labelY + 14);
+    });
+  }, [detectedParasites, imageLoaded]);
+
+  // --- 7. LÓGICA DE AGREGACIÓN DE RESULTADOS ---
   const aggregatedData = useMemo<IDetectedParasite[]>(() => {
     if (!detectedParasites || detectedParasites.length === 0) return [];
 
@@ -97,12 +215,52 @@ function ScannerResults() {
     }));
   }, [detectedParasites]);
 
+  // --- 8. ACTUALIZACIÓN AUTOMÁTICA EN DEXIE.JS AL FINALIZAR LA INFERENCIA ---
+  useEffect(() => {
+    if (isLoading || !analysisId || isNaN(Number(analysisId))) return;
+
+    const idNum = Number(analysisId);
+
+    if (aggregatedData.length > 0) {
+      const topParasite = aggregatedData[0];
+      db.diagnoses
+        .update(idNum, {
+          parasiteFound: topParasite.label,
+          confidence: topParasite.value / 100,
+          detectedParasitesCount: detectedParasites.length,
+        })
+        .catch((err) => {
+          console.error('Error al actualizar resultados de IA en Dexie:', err);
+        });
+    } else if (detectedParasites && detectedParasites.length === 0 && imageLoaded) {
+      db.diagnoses
+        .update(idNum, {
+          parasiteFound: 'Sin hallazgos parasitarios',
+          confidence: 1.0,
+          detectedParasitesCount: 0,
+        })
+        .catch((err) => {
+          console.error('Error al actualizar resultado negativo en Dexie:', err);
+        });
+    }
+  }, [isLoading, aggregatedData, detectedParasites, analysisId, imageLoaded]);
+
   const handleSendFeedback = () => {
     if (analysis) {
       localStorage.setItem('currentAnalysis', JSON.stringify(analysis));
       navigate(`/feedback/${analysisId}`);
     }
   };
+
+  if (isFetchingLocal) {
+    return (
+      <div className="flex size-full min-h-screen items-center justify-center bg-white font-inter">
+        <p className="text-sm font-medium text-[#5e8d81]">
+          Recuperando muestra desde la base de datos local...
+        </p>
+      </div>
+    );
+  }
 
   if (!analysis) {
     return (
@@ -141,7 +299,6 @@ function ScannerResults() {
                     ref={imgRef}
                     src={analysis.imgURL}
                     alt="Muestra microscópica"
-                    crossOrigin="anonymous"
                     className="max-h-full max-w-full object-contain z-0"
                     onLoad={() => setImageLoaded(true)}
                   />
@@ -152,16 +309,15 @@ function ScannerResults() {
                   className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
                 />
 
+                {/* OVERLAY DE CARGA MIENTRAS EL MODELO REALIZA LA DETECCIÓN */}
                 <div
-                  className={`absolute inset-0 flex items-center justify-center bg-black/60 text-white backdrop-blur-sm flex-col z-20 transition-opacity duration-500 ${isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                  className={`absolute inset-0 flex items-center justify-center bg-black/60 text-white backdrop-blur-sm flex-col z-20 transition-opacity duration-500 ${
+                    isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                  }`}
                 >
-                  <p className="text-lg font-medium">Analizando morfología...</p>
+                  <p className="text-lg font-medium">Analizando morfología con IA...</p>
                   <div className="w-4/5 h-2 bg-white/20 rounded-full mt-4 overflow-hidden">
-                    <div
-                      ref={progressBarRef}
-                      className="h-full bg-[#00c795] transition-all duration-300"
-                      style={{ width: '0%' }}
-                    />
+                    <div className="h-full bg-[#00c795] animate-pulse w-full" />
                   </div>
                 </div>
               </div>

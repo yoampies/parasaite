@@ -23,7 +23,6 @@ async function initModel() {
     const uint8Array = new Uint8Array(arrayBuffer);
 
     // 2. Inicializar la sesión solo con las opciones permitidas
-    // 'wasm' ya no va aquí, por eso daba error
     session = await InferenceSession.create(uint8Array, {
       executionProviders: ['wasm'],
     });
@@ -51,7 +50,6 @@ ctxSelf.onmessage = async (e: MessageEvent<any>) => {
     console.log('Worker: Mensaje recibido con tipo:', e.data.type);
     if (!session) {
       console.warn('Worker: El modelo ONNX aún no está listo.');
-      // Intentar re-inicializar si por algún motivo no cargó antes
       await initModel();
       if (!session) {
         console.warn('Worker: El modelo ONNX aún no está listo. Estado de init:', isInitializing);
@@ -61,6 +59,9 @@ ctxSelf.onmessage = async (e: MessageEvent<any>) => {
 
     const { imageBitmap } = msg;
     if (!imageBitmap) return;
+
+    const originalWidth = imageBitmap.width;
+    const originalHeight = imageBitmap.height;
 
     const targetSize = 640;
     const resizeCanvas = new OffscreenCanvas(targetSize, targetSize);
@@ -102,12 +103,16 @@ ctxSelf.onmessage = async (e: MessageEvent<any>) => {
       const IOU_THRESHOLD = 0.45;
 
       interface CandidateDetection {
-        box: [number, number, number, number];
+        box: [number, number, number, number]; // [x_min_px, y_min_px, width_px, height_px]
         confidence: number;
         classId: number;
       }
 
       const candidates: CandidateDetection[] = [];
+
+      // Factores de escala para proyectar de 640x640 a la resolución real de la imagen original
+      const scaleX = originalWidth / targetSize;
+      const scaleY = originalHeight / targetSize;
 
       for (let c = 0; c < numCandidates; c++) {
         let maxScore = 0;
@@ -127,13 +132,18 @@ ctxSelf.onmessage = async (e: MessageEvent<any>) => {
           const w = outputData[2 * numCandidates + c];
           const h = outputData[3 * numCandidates + c];
 
-          const x_min = Math.max(0, (cx - w / 2) / targetSize);
-          const y_min = Math.max(0, (cy - h / 2) / targetSize);
-          const x_max = Math.min(1, (cx + w / 2) / targetSize);
-          const y_max = Math.min(1, (cy + h / 2) / targetSize);
+          // Coordenadas superiores izquierdas en el espacio de 640x640
+          const x_min = Math.max(0, cx - w / 2);
+          const y_min = Math.max(0, cy - h / 2);
+
+          // Escalar directamente a píxeles absolutos de la imagen original
+          const realX = x_min * scaleX;
+          const realY = y_min * scaleY;
+          const realW = w * scaleX;
+          const realH = h * scaleY;
 
           candidates.push({
-            box: [x_min, y_min, x_max, y_max],
+            box: [realX, realY, realW, realH],
             confidence: maxScore,
             classId: classId,
           });
@@ -167,18 +177,21 @@ ctxSelf.onmessage = async (e: MessageEvent<any>) => {
   }
 };
 
+/**
+ * Calculo de la Intersección sobre Unión (IoU) para cajas en formato [x, y, w, h]
+ */
 function calculateIoU(
   boxA: [number, number, number, number],
   boxB: [number, number, number, number]
 ): number {
   const xA = Math.max(boxA[0], boxB[0]);
   const yA = Math.max(boxA[1], boxB[1]);
-  const xB = Math.min(boxA[2], boxB[2]);
-  const yB = Math.min(boxA[3], boxB[3]);
+  const xB = Math.min(boxA[0] + boxA[2], boxB[0] + boxB[2]);
+  const yB = Math.min(boxA[1] + boxA[3], boxB[1] + boxB[3]);
 
   const intersectionArea = Math.max(0, xB - xA) * Math.max(0, yB - yA);
-  const boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1]);
-  const boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1]);
+  const boxAArea = boxA[2] * boxA[3];
+  const boxBArea = boxB[2] * boxB[3];
   const unionArea = boxAArea + boxBArea - intersectionArea;
 
   return unionArea === 0 ? 0 : intersectionArea / unionArea;

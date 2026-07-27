@@ -20,6 +20,7 @@
     "d3": "^7.9.0",
     "dexie": "^4.4.4",
     "gsap": "^3.13.0",
+    "lucide-react": "^1.27.0",
     "onnxruntime-web": "^1.27.0",
     "prop-types": "^15.8.1",
     "rc-slider": "^11.1.8",

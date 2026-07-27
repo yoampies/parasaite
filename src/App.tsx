@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar'; // Importamos tu Navbar estática
 import Home from './sections/Home';
 import Scanner from './sections/Scanner';
-import ScannerResults from './sections/ScannerResults';
+import ScannerResults from './sections/ScannerResults'; // Ajusta el path
 import ScannerFeedback from './sections/ScannerFeedback';
 
 const History = lazy(() => import('./sections/History'));
@@ -32,7 +32,7 @@ const App = (): React.ReactElement => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/scanner" element={<Scanner />} />
-            <Route path="/scanner-results/:analysisId" element={<ScannerResults />} />
+            <Route path="/results/:analysisId" element={<ScannerResults />} />
             <Route path="/feedback/:analysisId" element={<ScannerFeedback />} />
             <Route path="/history" element={<History />} />
             <Route path="/library" element={<Library />} />

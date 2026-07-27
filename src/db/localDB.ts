@@ -14,6 +14,8 @@ export interface Diagnosis {
   parasiteFound: string;
   confidence: number;
   isSynced: boolean;
+  detectedParasitesCount?: number;
+  imgURL?: string;
 }
 
 export interface DetectionFrame {
@@ -37,7 +39,6 @@ export class ParasiteDB extends Dexie {
 
   constructor() {
     super('ParasAIteDB');
-    // Define índices de búsqueda. NO se colocan Blobs aquí para mantener alto rendimiento.
     this.version(1).stores({
       patients: '++id, localId, name',
       diagnoses: '++id, patientLocalId, date, parasiteFound, isSynced',

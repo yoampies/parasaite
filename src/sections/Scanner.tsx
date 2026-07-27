@@ -1,377 +1,423 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import ImageUploader from '../components/ImageUploader';
-import ScannerCard from '../components/ScannerCard';
-import RegularCard from '../components/RegularCard';
-import { recentImages, parasiteTypes } from '../assets/constants';
-import { useImageAnalysisWorker } from '../hooks/UseImageAnalysisWorker';
+import { useEffect, useRef, useState, ChangeEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const Scanner: React.FC = () => {
-  const [inputType, setInputType] = useState<'camera' | 'file'>('camera');
-  const [cameraStream, setStream] = useState<MediaStream | null>(null);
+import { useHistoryStore } from '../hooks/UseHistoryStore';
+import { Patient } from '../db/localDB';
+
+/**
+ * @description Componente de captura en tiempo real y carga de muestras para análisis microscópico.
+ * Integra transmisión de video, captura de frames y persistencia inicial en Dexie.js.
+ */
+function Scanner() {
+  const navigate = useNavigate();
+  const saveDiagnosis = useHistoryStore((state) => state.saveDiagnosis);
+
+  // --- REFS ---
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+
+  // --- ESTADOS DE VIDEO / CÁMARA ---
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [capturedImage, setCapturedImage] = useState<Blob | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [memoryError, setMemoryError] = useState<boolean>(false);
+  const [selectedPatient] = useState<Patient | null>(null);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const imageRef = useRef<HTMLImageElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const requestRef = useRef<number | undefined>(undefined);
-  const timeoutRef = useRef<number | undefined>(undefined);
-
-  const { processSource, detectedParasites, isModelLoading, isDetecting, clearDetections } =
-    useImageAnalysisWorker();
-
-  // 1. Manejo global de errores de memoria (OOM)
+  // Inicialización de la cámara (Microscopio / WebCam)
   useEffect(() => {
-    const handleGlobalError = (event: ErrorEvent) => {
-      if (
-        event.message &&
-        (event.message.includes('out of memory') ||
-          event.message.includes('OOM') ||
-          event.message.includes('memory'))
-      ) {
-        setMemoryError(true);
+    async function startCamera() {
+      try {
+        const userStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false,
+        });
+        setStream(userStream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = userStream;
+        }
+      } catch (err) {
+        console.error('Error al acceder a la cámara:', err);
+        setCameraError(
+          'No se pudo acceder a la cámara/microscopio. Verifica los permisos del dispositivo.'
+        );
       }
-    };
-    window.addEventListener('error', handleGlobalError);
+    }
+
+    startCamera();
+
     return () => {
-      window.removeEventListener('error', handleGlobalError);
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
     };
   }, []);
 
-  const hasHighUncertainty = useMemo(() => {
-    return detectedParasites.some((pred) => pred.isGreyZone === true);
-  }, [detectedParasites]);
+  // Control de Grabación
+  const startRecording = () => {
+    if (!stream) return;
+    setRecordedChunks([]);
+    setVideoUrl(null);
+    setCapturedImage(null);
 
-  // 2. Bucle de inferencia para video en vivo
-  const runInferenceLoop = useCallback(() => {
-    if (!isRecording || !videoRef.current) return;
+    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    mediaRecorderRef.current = recorder;
 
-    processSource(videoRef.current);
-
-    timeoutRef.current = window.setTimeout(() => {
-      requestRef.current = requestAnimationFrame(runInferenceLoop);
-    }, 150);
-  }, [isRecording, processSource]);
-
-  useEffect(() => {
-    if (isRecording) {
-      runInferenceLoop();
-    } else {
-      if (timeoutRef.current !== undefined) clearTimeout(timeoutRef.current);
-      if (requestRef.current !== undefined) cancelAnimationFrame(requestRef.current);
-
-      const canvas = canvasRef.current;
-      const ctx = canvas?.getContext('2d');
-      if (ctx && canvas) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        setRecordedChunks((prev) => [...prev, e.data]);
       }
-    }
-
-    return () => {
-      if (timeoutRef.current !== undefined) clearTimeout(timeoutRef.current);
-      if (requestRef.current !== undefined) cancelAnimationFrame(requestRef.current);
     };
-  }, [isRecording, runInferenceLoop]);
 
-  // 3. Dibujar detecciones sobre el canvas
-  const drawDetections = useCallback(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!ctx || !canvas) return;
+    recorder.onstop = () => {
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      setVideoUrl(url);
+    };
 
-    if (inputType === 'file' && !selectedImage) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      return;
-    }
+    recorder.start();
+    setIsRecording(true);
+  };
 
-    let displayWidth = 0;
-    let displayHeight = 0;
-
-    if (inputType === 'camera' && videoRef.current) {
-      displayWidth = videoRef.current.clientWidth || videoRef.current.videoWidth;
-      displayHeight = videoRef.current.clientHeight || videoRef.current.videoHeight;
-    } else if (inputType === 'file' && imageRef.current) {
-      displayWidth = imageRef.current.clientWidth;
-      displayHeight = imageRef.current.clientHeight;
-    }
-
-    if (displayWidth > 0 && displayHeight > 0) {
-      if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-        canvas.width = displayWidth;
-        canvas.height = displayHeight;
-      }
-    } else {
-      return;
-    }
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (inputType === 'camera' && !isRecording) return;
-
-    if (Array.isArray(detectedParasites) && detectedParasites.length > 0) {
-      detectedParasites.forEach((pred) => {
-        if (!pred?.box || pred.box.length < 4) return;
-
-        const x = pred.box[0] * canvas.width;
-        const y = pred.box[1] * canvas.height;
-        const w = (pred.box[2] - pred.box[0]) * canvas.width;
-        const h = (pred.box[3] - pred.box[1]) * canvas.height;
-
-        const isUncertain = pred.isGreyZone || hasHighUncertainty;
-        const strokeColor = isUncertain ? '#F59E0B' : '#10B981';
-
-        ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = 3;
-        ctx.strokeRect(x, y, w, h);
-
-        ctx.font = 'bold 13px Arial';
-
-        const parasiteName = parasiteTypes[pred.classId] || `${pred.classId}`;
-        const label = isUncertain ? 'Posible forma parasitaria' : parasiteName;
-        const textWidth = ctx.measureText(label).width;
-
-        ctx.fillStyle = strokeColor;
-        ctx.fillRect(x, y > 20 ? y - 22 : y, textWidth + 10, 22);
-
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillText(label, x + 5, y > 20 ? y - 6 : y + 15);
-      });
-    }
-  }, [detectedParasites, isRecording, inputType, selectedImage, hasHighUncertainty]);
-
-  // Dibujar automáticamente al cambiar detecciones o cambiar tamaño
-  useEffect(() => {
-    drawDetections();
-    window.addEventListener('resize', drawDetections);
-    return () => window.removeEventListener('resize', drawDetections);
-  }, [drawDetections]);
-
-  // 4. Disparar inferencia cuando la imagen esté completamente cargada en el DOM
-  const handleImageLoad = () => {
-    drawDetections();
-    if (imageRef.current && !isModelLoading) {
-      processSource(imageRef.current);
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
     }
   };
 
-  // Limpieza al cambiar entre Cámara y Archivo
-  useEffect(() => {
-    stopCamera();
-    clearDetections();
-    if (inputType === 'camera') {
-      startCamera();
-      setSelectedImage(null);
+  // Captura de Instantánea desde el Stream
+  const captureFrame = () => {
+    if (!videoRef.current) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth || 1280;
+    canvas.height = videoRef.current.videoHeight || 720;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          setCapturedImage(blob);
+          setVideoUrl(null);
+        }
+      }, 'image/png');
     }
-    return () => stopCamera();
-  }, [inputType, clearDetections]);
+  };
 
-  async function startCamera() {
-    setCameraError(null);
+  // Carga manual de imagen desde archivo local
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setCapturedImage(file);
+      setVideoUrl(null);
+    }
+  };
+
+  // Persistencia inicial en Dexie.js y Redirección a ScannerResults para inferencia YOLO
+  const handleProcessAnalysis = async () => {
+    if (!capturedImage && recordedChunks.length === 0) return;
+
+    setIsProcessing(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-      });
-      setStream(stream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch (err) {
-      console.error('Scanner: Error al acceder a la cámara:', err);
-      setCameraError('No se pudo acceder a la cámara.');
-      setInputType('file');
-    }
-  }
+      const imageBlob = capturedImage || new Blob(recordedChunks, { type: 'image/png' });
 
-  function stopCamera() {
-    setIsRecording(false);
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((track) => track.stop());
-      setStream(null);
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  }
+      const initialDiagnosisData = {
+        patientLocalId: selectedPatient?.localId || 'PAT-LOCAL-001',
+        date: new Date().toISOString(),
+        parasiteFound: '',
+        confidence: 0,
+        detectedParasitesCount: 0,
+      };
 
-  const handleFileSelect = async (file: File) => {
-    clearDetections();
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (ctx && canvas) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
+      // 1. Guardar en Dexie (Diagnóstico preliminar + Blob de imagen)
+      const diagnosisId = await saveDiagnosis(initialDiagnosisData, imageBlob);
 
-    const objectUrl = URL.createObjectURL(file);
-    setSelectedImage(objectUrl);
+      // 2. Navegar inmediatamente a la vista de resultados para ejecutar el análisis del modelo
+      navigate(`/results/${diagnosisId}`);
+    } catch (error) {
+      console.error('Error al iniciar la sesión de análisis en Dexie:', error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-8 relative">
-      {memoryError && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4 text-center">
-            <div className="text-4xl">⚠️</div>
-            <h3 className="text-lg font-bold text-neutral-900">Memoria Insuficiente</h3>
-            <p className="text-sm text-neutral-600">
-              Tu dispositivo se ha quedado sin memoria. Por favor, cierra otras pestañas o usa una
-              imagen más pequeña.
-            </p>
-            <button
-              onClick={() => setMemoryError(false)}
-              className="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-4 rounded-xl transition-colors"
-            >
-              Entendido
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="relative flex size-full min-h-screen flex-col bg-[#f8faf9] font-inter overflow-x-hidden">
+      <div className="layout-container flex h-full grow flex-col">
+        <main className="flex flex-1 justify-center p-4 sm:p-6">
+          <div className="layout-content-container flex flex-col max-w-[1200px] flex-1 gap-6">
+            {/* ENCABEZADO */}
+            <header className="flex flex-wrap justify-between items-center gap-4 bg-white p-6 rounded-2xl border border-[#dae7e3] shadow-sm">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="p-2 bg-[#e8f7f3] text-[#00c795] rounded-lg">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </span>
+                  <h1 className="text-[#101816] tracking-light text-2xl font-bold">
+                    Escáner Microscópico en Vivo
+                  </h1>
+                </div>
+                <p className="text-[#5e8d81] text-sm">
+                  Transmisión directa desde la cámara del microscopio o carga manual de muestras.
+                </p>
+              </div>
 
-      <div className="flex bg-neutral-100 p-1 rounded-xl max-w-md mx-auto shadow-inner w-full">
-        <button
-          onClick={() => {
-            clearDetections();
-            setInputType('camera');
-          }}
-          className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-            inputType === 'camera' ? 'bg-white text-emerald-600 shadow-sm' : 'text-neutral-500'
-          }`}
-        >
-          🎥 Cámara en Vivo
-        </button>
-        <button
-          onClick={() => {
-            clearDetections();
-            setInputType('file');
-          }}
-          className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-            inputType === 'file' ? 'bg-white text-emerald-600 shadow-sm' : 'text-neutral-500'
-          }`}
-        >
-          📁 Subir Archivo
-        </button>
-      </div>
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#dae7e3] bg-[#fbfcfc] text-[#101816] font-medium text-sm">
+                <svg
+                  className="w-4 h-4 text-[#00c795]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                <span>
+                  {selectedPatient
+                    ? `Paciente: ${selectedPatient.name}`
+                    : 'Paciente: Anónimo (Local)'}
+                </span>
+              </div>
+            </header>
 
-      <div
-        className={`w-full relative bg-neutral-900 rounded-2xl overflow-hidden shadow-lg flex items-center justify-center ${
-          inputType === 'camera' ? 'aspect-video max-h-[70vh]' : 'min-h-[300px] max-h-[70vh] p-4'
-        } ${isDetecting ? 'ring-2 ring-emerald-500' : ''}`}
-      >
-        {isModelLoading && (
-          <div className="absolute inset-0 bg-neutral-900/90 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-4 text-center">
-            <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3"></div>
-            <p className="text-white text-sm font-medium">Cargando modelo de detección...</p>
-          </div>
-        )}
+            {/* ÁREA PRINCIPAL DEL VISOR DE VIDEO */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <section className="lg:col-span-2 flex flex-col gap-4">
+                <div className="relative w-full aspect-[4/3] bg-black rounded-2xl overflow-hidden border border-[#dae7e3] shadow-inner flex items-center justify-center">
+                  {cameraError ? (
+                    <div className="p-6 text-center text-white/80 max-w-md">
+                      <p className="text-sm">{cameraError}</p>
+                    </div>
+                  ) : capturedImage ? (
+                    <img
+                      src={URL.createObjectURL(capturedImage)}
+                      alt="Captura microscópica"
+                      className="w-full h-full object-contain"
+                    />
+                  ) : videoUrl ? (
+                    <video src={videoUrl} controls className="w-full h-full object-contain" />
+                  ) : (
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-contain"
+                    />
+                  )}
 
-        {hasHighUncertainty && (
-          <div className="absolute top-4 left-4 right-4 bg-amber-500/95 border border-amber-400 text-neutral-900 px-4 py-3 rounded-xl shadow-xl z-30 flex items-center gap-3">
-            <span className="text-xl">⚠️</span>
-            <div className="text-left font-inter">
-              <span className="font-bold block text-xs md:text-sm uppercase tracking-wider">
-                Incertidumbre Alta Detectada
-              </span>
-              <p className="text-xs md:text-sm font-normal text-neutral-800">
-                Por favor, aumente el objetivo físico de su microscopio para verificar morfología
-                interna.
-              </p>
+                  {isRecording && (
+                    <div className="absolute top-4 left-4 flex items-center gap-2 bg-red-600/90 text-white px-3 py-1.5 rounded-full text-xs font-semibold animate-pulse backdrop-blur-md">
+                      <span className="w-2 h-2 bg-white rounded-full"></span>
+                      GRABANDO STREAM...
+                    </div>
+                  )}
+                </div>
+
+                {/* CONTROLES DE CAPTURA Y GRABACIÓN */}
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#dae7e3]">
+                  <div className="flex items-center gap-2">
+                    {!isRecording ? (
+                      <button
+                        onClick={startRecording}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 font-semibold text-sm rounded-xl transition-all"
+                      >
+                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                        Grabar Video
+                      </button>
+                    ) : (
+                      <button
+                        onClick={stopRecording}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white hover:bg-red-700 font-semibold text-sm rounded-xl transition-all"
+                      >
+                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                          <path d="M6 6h12v12H6z" />
+                        </svg>
+                        Detener
+                      </button>
+                    )}
+
+                    <button
+                      onClick={captureFrame}
+                      className="flex items-center gap-2 px-4 py-2 bg-[#f0f5f4] text-[#101816] hover:bg-[#e0ece8] font-semibold text-sm rounded-xl transition-all"
+                    >
+                      <svg
+                        className="w-4 h-4 text-[#00c795]"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                      Capturar Frame
+                    </button>
+                  </div>
+
+                  {(capturedImage || videoUrl) && (
+                    <button
+                      onClick={() => {
+                        setCapturedImage(null);
+                        setVideoUrl(null);
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#5e8d81] hover:text-[#101816] transition-colors"
+                    >
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                      Reintentar Toma
+                    </button>
+                  )}
+                </div>
+              </section>
+
+              {/* PANEL LATERAL DE CARGA Y PROCESAMIENTO */}
+              <aside className="flex flex-col gap-6">
+                <div className="flex flex-col gap-4 bg-white p-6 rounded-2xl border border-[#dae7e3]">
+                  <h3 className="text-[#101816] text-base font-bold flex items-center gap-2">
+                    <svg
+                      className="w-5 h-5 text-[#00c795]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                      />
+                    </svg>
+                    Carga Alternativa
+                  </h3>
+                  <p className="text-[#5e8d81] text-xs leading-relaxed">
+                    Si dispones de un archivo en alta definición (PNG, JPG) guardado previamente,
+                    puedes subirlo directamente.
+                  </p>
+
+                  <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-[#dae7e3] hover:border-[#00c795] rounded-xl cursor-pointer bg-[#fbfcfc] hover:bg-[#f0f5f4] transition-all group">
+                    <svg
+                      className="w-8 h-8 text-[#5e8d81] group-hover:text-[#00c795] transition-colors mb-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                      />
+                    </svg>
+                    <span className="text-xs font-semibold text-[#101816]">Subir imagen</span>
+                    <span className="text-[11px] text-[#5e8d81]">Soporta PNG, JPG o WEBP</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* BOTÓN FINAL DE PROCESAMIENTO */}
+                <div className="bg-[#f0f5f4] p-6 rounded-2xl border border-[#dae7e3] flex flex-col gap-4">
+                  <div className="flex items-start gap-3">
+                    <svg
+                      className="w-5 h-5 text-[#00c795] shrink-0 mt-0.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                      />
+                    </svg>
+                    <div className="flex flex-col gap-1">
+                      <h4 className="text-sm font-bold text-[#101816]">Procesar con IA</h4>
+                      <p className="text-xs text-[#5e8d81] leading-relaxed">
+                        El modelo YOLOv8 detectará estructuras parasitarias y guardará el registro
+                        en la base de datos local.
+                      </p>
+                    </div>
+                  </div>
+
+                  {capturedImage && (
+                    <div className="flex items-center gap-2 text-xs font-semibold text-[#00c795] bg-white p-2.5 rounded-lg border border-[#dae7e3]">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      Muestra lista para evaluación
+                    </div>
+                  )}
+
+                  <button
+                    disabled={(!capturedImage && recordedChunks.length === 0) || isProcessing}
+                    onClick={handleProcessAnalysis}
+                    className={`w-full h-12 rounded-xl font-bold text-sm text-[#101816] transition-all flex items-center justify-center gap-2 ${
+                      (!capturedImage && recordedChunks.length === 0) || isProcessing
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-[#00c795] hover:bg-[#00a67d] shadow-md shadow-[#00c795]/20'
+                    }`}
+                  >
+                    {isProcessing ? 'Procesando e Indexando...' : 'Iniciar Análisis de Muestra'}
+                  </button>
+                </div>
+              </aside>
             </div>
           </div>
-        )}
-
-        {inputType === 'camera' ? (
-          <>
-            {cameraError && (
-              <div className="absolute inset-0 bg-neutral-900/90 flex items-center justify-center p-4 text-center z-10">
-                <p className="text-red-400 text-sm font-medium">{cameraError}</p>
-              </div>
-            )}
-            <video
-              id="microscope-preview"
-              ref={videoRef}
-              playsInline
-              muted
-              autoPlay
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute bottom-6 z-20">
-              <button
-                onClick={() => setIsRecording(!isRecording)}
-                className={`px-8 py-3 rounded-full font-bold text-white shadow-lg transition-all ${
-                  isRecording
-                    ? 'bg-red-500 hover:bg-red-600'
-                    : 'bg-emerald-500 hover:bg-emerald-600'
-                }`}
-              >
-                {isRecording ? '⏹ Detener Escaneo' : '⏺ Iniciar Escaneo'}
-              </button>
-            </div>
-            <canvas
-              id="scanner-overlay"
-              ref={canvasRef}
-              className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
-            />
-          </>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center relative">
-            {!selectedImage ? (
-              <ImageUploader
-                instruction="Análisis estático de muestras"
-                onFileSelect={handleFileSelect}
-              />
-            ) : (
-              <div className="relative inline-flex items-center justify-center max-w-full max-h-[65vh]">
-                <img
-                  ref={imageRef}
-                  src={selectedImage}
-                  alt="Muestra subida"
-                  onLoad={handleImageLoad}
-                  className="max-w-full max-h-[65vh] object-contain block rounded-lg"
-                />
-                <canvas
-                  id="scanner-overlay"
-                  ref={canvasRef}
-                  className="absolute top-0 left-0 pointer-events-none z-10"
-                />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {inputType === 'file' && selectedImage && (
-        <div className="w-full max-w-md mx-auto flex flex-col gap-3 items-center">
-          <ScannerCard imgURL={selectedImage} isSelected={false} />
-          <button
-            onClick={() => {
-              clearDetections();
-              setSelectedImage(null);
-            }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-teal-600 bg-white border border-teal-200 hover:bg-teal-100 hover:border-teal-300 transition-all shadow-sm active:scale-95"
-          >
-            Cambiar imagen
-          </button>
-        </div>
-      )}
-
-      <div className="bg-neutral-50 p-6 rounded-2xl border border-neutral-100 flex flex-col gap-6 w-full mt-4">
-        <div>
-          <h3 className="text-[#101816] text-xl font-bold leading-tight">Capturas Recientes</h3>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {recentImages.map((analysis) => (
-            <RegularCard
-              key={analysis.id}
-              title={analysis.fileName || `Muestra #${analysis.id}`}
-              content={analysis.content}
-              imgURL={analysis.imgURL}
-            />
-          ))}
-        </div>
+        </main>
       </div>
     </div>
   );
-};
+}
 
 export default Scanner;
