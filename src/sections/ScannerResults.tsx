@@ -10,21 +10,12 @@ import Error from '../components/Error';
 import {
   recentAnalyses as recentAnalysesConstant,
   recentImages as recentImagesConstant,
+  parasiteTypes,
 } from '../assets/constants';
 import { IAnalysis, IDetectedParasite, IBoundingBox } from '../types';
 import useImageAnalysisWorker from '../hooks/UseImageAnalysisWorker';
 import { useHistoryStore } from '../hooks/UseHistoryStore';
 import { db } from '../db/localDB';
-
-// Diccionario de mapeo clínico
-const CLASS_LABELS: Record<number, string> = {
-  0: 'Ascaris lumbricoides',
-  1: 'Giardia duodenalis',
-  2: 'Blastocystis hominis',
-  3: 'Enterobius vermicularis',
-  4: 'Necator americanus',
-  5: 'Trichuris trichiura',
-};
 
 /**
  * @description Componente de visualización de resultados diagnósticos.
@@ -55,7 +46,6 @@ function ScannerResults() {
     const fetchAnalysisData = async () => {
       setIsFetchingLocal(true);
 
-      // A) Comprobar si el análisis viene por state de react-router
       const stateAnalysis = (location.state as { analysis?: IAnalysis })?.analysis;
       if (stateAnalysis) {
         setAnalysis(stateAnalysis);
@@ -63,7 +53,6 @@ function ScannerResults() {
         return;
       }
 
-      // B) Consultar directamente en Dexie por ID
       if (analysisId && !isNaN(Number(analysisId))) {
         const idNum = Number(analysisId);
         try {
@@ -90,7 +79,6 @@ function ScannerResults() {
         }
       }
 
-      // C) Fallback a LocalStorage o Mocks
       const localData = localStorage.getItem('recentAnalyses');
       const localAnalyses: IAnalysis[] = localData ? JSON.parse(localData) : [];
 
@@ -124,7 +112,7 @@ function ScannerResults() {
     }
   }, [imageLoaded, processSource]);
 
-  // --- 6. DIBUJAR BOUNDING BOXES EN EL CANVAS ---
+  // --- 6. DIBUJAR BOUNDING BOXES EXACTOS SOBRE CADA PARÁSITO ---
   useEffect(() => {
     const canvas = canvasRef.current;
     const img = imgRef.current;
@@ -133,59 +121,49 @@ function ScannerResults() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Sincronizar dimensiones del canvas con el elemento de imagen renderizado
+    // Ajustar resolución interna y física del canvas exactamente a la visualización de la imagen
     canvas.width = img.clientWidth;
     canvas.height = img.clientHeight;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (!detectedParasites || detectedParasites.length === 0) return;
-
-    // Calcular el área de renderizado real de la imagen considerando CSS `object-contain`
-    const imgRatio = img.naturalWidth / img.naturalHeight;
-    const containerRatio = canvas.width / canvas.height;
-
-    let renderWidth = canvas.width;
-    let renderHeight = canvas.height;
-    let offsetX = 0;
-    let offsetY = 0;
-
-    if (containerRatio > imgRatio) {
-      renderWidth = canvas.height * imgRatio;
-      offsetX = (canvas.width - renderWidth) / 2;
-    } else {
-      renderHeight = canvas.width / imgRatio;
-      offsetY = (canvas.height - renderHeight) / 2;
-    }
-
-    // Escalas de proyección desde la resolución nativa de la imagen original hacia el viewport
-    const scaleX = renderWidth / img.naturalWidth;
-    const scaleY = renderHeight / img.naturalHeight;
+    if (
+      !detectedParasites ||
+      detectedParasites.length === 0 ||
+      !img.naturalWidth ||
+      !img.naturalHeight
+    )
+      return;
 
     detectedParasites.forEach((item) => {
-      // Formato proveniente del worker: [rawX_px, rawY_px, rawW_px, rawH_px]
-      const [rawX, rawY, rawW, rawH] = item.box;
+      // 1. Extraer las coordenadas normalizadas [x1, y1, x2, y2]
+      const [normX1, normY1, normX2, normY2] = item.box;
 
-      const x = offsetX + rawX * scaleX;
-      const y = offsetY + rawY * scaleY;
-      const w = rawW * scaleX;
-      const h = rawH * scaleY;
+      // 2. Convertir coordenadas normalizadas a píxeles reales del Canvas
+      const x = normX1 * canvas.width;
+      const y = normY1 * canvas.height;
+      const w = (normX2 - normX1) * canvas.width;
+      const h = (normY2 - normY1) * canvas.height;
 
-      // Color del borde de la caja
+      // Dibujar caja individual delimitadora
       ctx.strokeStyle = item.isGreyZone ? '#f59e0b' : '#00c795';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 2.5;
       ctx.strokeRect(x, y, w, h);
 
-      // Dibujar etiqueta
-      const label = `${CLASS_LABELS[item.classId] || 'Parásito'} ${(item.confidence * 100).toFixed(0)}%`;
-      ctx.fillStyle = item.isGreyZone ? '#f59e0b' : '#00c795';
-      ctx.font = 'bold 12px Inter, sans-serif';
-      const textWidth = ctx.measureText(label).width;
+      // Renderizado limpio de la etiqueta clínica asociada a cada caja usando la fuente única de verdad (parasiteTypes)
+      const label = `${parasiteTypes[item.classId] || 'Parásito'} ${(item.confidence * 100).toFixed(0)}%`;
+      ctx.font = '600 11px Inter, sans-serif';
+      const textMetrics = ctx.measureText(label);
+      const textWidth = textMetrics.width;
+      const textHeight = 16;
 
-      const labelY = y > 22 ? y - 22 : y;
-      ctx.fillRect(x, labelY, textWidth + 10, 20);
+      const labelX = x;
+      const labelY = y > textHeight + 4 ? y - textHeight - 2 : y + h + 2;
+
+      ctx.fillStyle = item.isGreyZone ? '#f59e0b' : '#00c795';
+      ctx.fillRect(labelX, labelY, textWidth + 8, textHeight);
 
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(label, x + 5, labelY + 14);
+      ctx.fillText(label, labelX + 4, labelY + 12);
     });
   }, [detectedParasites, imageLoaded]);
 
@@ -195,7 +173,7 @@ function ScannerResults() {
 
     const parasitesMap = (detectedParasites as IBoundingBox[]).reduce(
       (acc, currentBox) => {
-        const label = CLASS_LABELS[currentBox.classId] || `Especie ${currentBox.classId}`;
+        const label = parasiteTypes[currentBox.classId] || `Especie ${currentBox.classId}`;
         const value = currentBox.confidence;
 
         if (acc[label]) {
@@ -294,20 +272,23 @@ function ScannerResults() {
 
             <section className="flex w-full grow bg-white p-4" ref={scannerContainerRef}>
               <div className="w-full gap-1 overflow-hidden bg-gray-50 aspect-[3/2] rounded-lg flex relative border border-[#dae7e3] items-center justify-center">
-                {analysis.imgURL && (
-                  <img
-                    ref={imgRef}
-                    src={analysis.imgURL}
-                    alt="Muestra microscópica"
-                    className="max-h-full max-w-full object-contain z-0"
-                    onLoad={() => setImageLoaded(true)}
-                  />
-                )}
+                {/* Contenedor estricto para que la imagen y el canvas se superpongan milimétricamente */}
+                <div className="relative inline-flex items-center justify-center h-full max-w-full">
+                  {analysis.imgURL && (
+                    <img
+                      ref={imgRef}
+                      src={analysis.imgURL}
+                      alt="Muestra microscópica"
+                      className="max-h-full max-w-full object-contain block z-0"
+                      onLoad={() => setImageLoaded(true)}
+                    />
+                  )}
 
-                <canvas
-                  ref={canvasRef}
-                  className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
-                />
+                  <canvas
+                    ref={canvasRef}
+                    className="absolute inset-0 w-full h-full pointer-events-none z-10"
+                  />
+                </div>
 
                 {/* OVERLAY DE CARGA MIENTRAS EL MODELO REALIZA LA DETECCIÓN */}
                 <div

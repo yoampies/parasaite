@@ -3,8 +3,10 @@ import { db, type Diagnosis } from '../db/localDB';
 
 interface HistoryState {
   history: Diagnosis[];
+  searchQuery: string;
   selectedFrameBlob: Blob | null;
   isLoading: boolean;
+  setSearchQuery: (query: string) => void;
   loadHistory: () => Promise<void>;
   saveDiagnosis: (
     diagnosisData: Omit<Diagnosis, 'id' | 'isSynced'>,
@@ -16,8 +18,11 @@ interface HistoryState {
 
 export const useHistoryStore = create<HistoryState>((set) => ({
   history: [],
+  searchQuery: '',
   selectedFrameBlob: null,
   isLoading: false,
+
+  setSearchQuery: (query: string) => set({ searchQuery: query }),
 
   loadHistory: async () => {
     set({ isLoading: true });
@@ -32,30 +37,25 @@ export const useHistoryStore = create<HistoryState>((set) => ({
   },
 
   saveDiagnosis: async (diagnosisData, imageFile) => {
-    // Transacción atómica en Dexie para asegurar consistencia de datos
     return await db.transaction(
       'rw',
       [db.diagnoses, db.detectionFrames, db.pendingSyncs],
       async () => {
-        // 1. Guardar diagnóstico en frío con isSynced: false
         const diagId = await db.diagnoses.add({
           ...diagnosisData,
           isSynced: false,
         });
 
-        // 2. Almacenar el archivo/Blob original
         await db.detectionFrames.add({
           diagnosisId: diagId,
           imageBlob: imageFile,
         });
 
-        // 3. Registrar el ID en la cola de sincronización pendiente
         await db.pendingSyncs.add({
           diagnosisId: diagId,
           retryCount: 0,
         });
 
-        // Actualizar el estado global en Zustand
         const updatedHistory = await db.diagnoses.orderBy('date').reverse().toArray();
         set({ history: updatedHistory });
 

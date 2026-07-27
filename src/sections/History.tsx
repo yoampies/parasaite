@@ -1,6 +1,7 @@
 import { useMemo, CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHistoryStore } from '../hooks/UseHistoryStore';
+import { Diagnosis } from '../db/localDB';
 
 // Components
 import Card from '../components/Card';
@@ -25,24 +26,35 @@ const filters: FilterConfig[] = [
 function History() {
   const navigate = useNavigate();
 
-  // Consumimos el Store de Zustand
-  const { analyses, searchQuery, setSearchQuery } = useHistoryStore();
+  // Consumimos el Store de Zustand correctamente tipado
+  const { history, searchQuery, setSearchQuery } = useHistoryStore();
 
-  // Lógica de filtrado y ordenamiento centralizada
+  // Lógica de filtrado, mapeo y ordenamiento centralizada
   const filteredAndSortedAnalyses = useMemo(() => {
-    return analyses
-      .filter((a) => {
+    return history
+      .filter((item: Diagnosis) => {
+        const parasite = item.parasiteFound || '';
+        const dateStr = item.date || '';
         const matchesSearch =
-          a.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          a.date.includes(searchQuery);
-        // Aquí se pueden integrar fácilmente los otros filtros del store
+          parasite.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          dateStr.includes(searchQuery);
         return matchesSearch;
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [analyses, searchQuery]);
+      .sort((a: Diagnosis, b: Diagnosis) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .map(
+        (item: Diagnosis): IAnalysis => ({
+          id: item.id || 0,
+          date: item.date,
+          content: item.parasiteFound || 'Análisis completado',
+          imgURL: '', // Se gestionará dinámicamente en ScannerResults mediante el ID
+          detectedParasites: [],
+          fileName: `muestra_${item.id}.jpg`,
+        })
+      );
+  }, [history, searchQuery]);
 
   const handleCardClick = (analysis: IAnalysis) => {
-    navigate(`/scanner-results/${analysis.id}`, { state: { analysis } });
+    navigate(`/results/${analysis.id}`, { state: { analysis } });
   };
 
   const containerStyle: CSSProperties = {
@@ -60,10 +72,7 @@ function History() {
         <div className="gap-1 px-6 flex flex-1 justify-center py-5">
           {/* Panel Lateral de Filtros */}
           <aside className="layout-content-container flex flex-col w-80">
-            <Search
-              placeholder="Buscar por fecha, hora o parásito"
-              onSearch={setSearchQuery} // Actualiza directamente el estado global
-            />
+            <Search placeholder="Buscar por fecha, hora o parásito" onSearch={setSearchQuery} />
             {filters.map((Filter, index) => (
               <Filter.component key={`${Filter.title}-${index}`} {...Filter} />
             ))}
@@ -88,7 +97,7 @@ function History() {
                 Análisis Recientes
               </h2>
               {filteredAndSortedAnalyses.length > 0 ? (
-                filteredAndSortedAnalyses.map((analysis) => (
+                filteredAndSortedAnalyses.map((analysis: IAnalysis) => (
                   <Card
                     key={analysis.id}
                     title={`Análisis del ${analysis.date}`}
