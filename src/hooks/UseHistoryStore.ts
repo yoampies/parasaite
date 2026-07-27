@@ -1,61 +1,80 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { IAnalysis, DateRange } from '../types';
-import { recentAnalyses } from '../assets/constants';
+import { db, type Diagnosis } from '../db/localDB';
 
 interface HistoryState {
-  // Estado de Datos
-  analyses: IAnalysis[];
-
-  // Estado de Filtros
-  searchQuery: string;
-  selectedParasites: string[];
-  confidenceRange: [number, number];
-  dateRange: DateRange;
-  feedbackStatus: string | null;
-
-  // Acciones de Filtros
-  setSearchQuery: (query: string) => void;
-  setSelectedParasites: (parasites: string[]) => void;
-  setConfidenceRange: (range: [number, number]) => void;
-  setDateRange: (range: DateRange) => void;
-  setFeedbackStatus: (status: string | null) => void;
-
-  addAnalysis: (analysis: IAnalysis) => void;
-  resetFilters: () => void;
+  history: Diagnosis[];
+  selectedFrameBlob: Blob | null;
+  isLoading: boolean;
+  loadHistory: () => Promise<void>;
+  saveDiagnosis: (
+    diagnosisData: Omit<Diagnosis, 'id' | 'isSynced'>,
+    imageFile: Blob
+  ) => Promise<number>;
+  loadFrameForDiagnosis: (diagnosisId: number) => Promise<Blob | null>;
+  clearSelectedFrame: () => void;
 }
 
-export const useHistoryStore = create<HistoryState>()(
-  persist(
-    (set) => ({
-      analyses: recentAnalyses,
-      searchQuery: '',
-      selectedParasites: [],
-      confidenceRange: [0, 100],
-      dateRange: { start: null, end: null },
-      feedbackStatus: null,
+export const useHistoryStore = create<HistoryState>((set) => ({
+  history: [],
+  selectedFrameBlob: null,
+  isLoading: false,
 
-      setSearchQuery: (searchQuery) => set({ searchQuery }),
-      setSelectedParasites: (selectedParasites) => set({ selectedParasites }),
-      setConfidenceRange: (confidenceRange) => set({ confidenceRange }),
-      setDateRange: (dateRange) => set({ dateRange }),
-      setFeedbackStatus: (feedbackStatus) => set({ feedbackStatus }),
-
-      addAnalysis: (analysis) => set((state) => ({ analyses: [analysis, ...state.analyses] })),
-
-      resetFilters: () =>
-        set({
-          searchQuery: '',
-          selectedParasites: [],
-          confidenceRange: [0, 100],
-          dateRange: { start: null, end: null },
-          feedbackStatus: null,
-        }),
-    }),
-    {
-      name: 'parasite-history-storage',
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ analyses: state.analyses }),
+  loadHistory: async () => {
+    set({ isLoading: true });
+    try {
+      const allDiagnoses = await db.diagnoses.orderBy('date').reverse().toArray();
+      set({ history: allDiagnoses });
+    } catch (error) {
+      console.error('Error al cargar el historial desde Dexie:', error);
+    } finally {
+      set({ isLoading: false });
     }
-  )
-);
+  },
+
+  saveDiagnosis: async (diagnosisData, imageFile) => {
+    // Transacción atómica en Dexie para asegurar consistencia de datos
+    return await db.transaction(
+      'rw',
+      [db.diagnoses, db.detectionFrames, db.pendingSyncs],
+      async () => {
+        // 1. Guardar diagnóstico en frío con isSynced: false
+        const diagId = await db.diagnoses.add({
+          ...diagnosisData,
+          isSynced: false,
+        });
+
+        // 2. Almacenar el archivo/Blob original
+        await db.detectionFrames.add({
+          diagnosisId: diagId,
+          imageBlob: imageFile,
+        });
+
+        // 3. Registrar el ID en la cola de sincronización pendiente
+        await db.pendingSyncs.add({
+          diagnosisId: diagId,
+          retryCount: 0,
+        });
+
+        // Actualizar el estado global en Zustand
+        const updatedHistory = await db.diagnoses.orderBy('date').reverse().toArray();
+        set({ history: updatedHistory });
+
+        return diagId;
+      }
+    );
+  },
+
+  loadFrameForDiagnosis: async (diagnosisId: number) => {
+    try {
+      const frame = await db.detectionFrames.where('diagnosisId').equals(diagnosisId).first();
+      const blob = frame?.imageBlob || null;
+      set({ selectedFrameBlob: blob });
+      return blob;
+    } catch (error) {
+      console.error('Error al consultar el Blob de la imagen:', error);
+      return null;
+    }
+  },
+
+  clearSelectedFrame: () => set({ selectedFrameBlob: null }),
+}));

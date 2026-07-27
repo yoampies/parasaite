@@ -35,7 +35,9 @@ function ScannerResults() {
 
   // --- 1. ESTADO ---
   const [analysis, setAnalysis] = useState<IAnalysis | null>(null);
-  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
+  // Se ignora el valor leal con '_' para evitar el error de variable no leída de ESLint/TS,
+  // pero manteniendo el handler de carga activa si se requiere más adelante.
+  const [, setImageLoaded] = useState<boolean>(false);
 
   // --- 2. REFS PARA WORKER ---
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -43,7 +45,7 @@ function ScannerResults() {
   const progressBarRef = useRef<HTMLDivElement>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
 
-  // --- 3. RECUPERACIÓN DE DATOS (Lógica restaurada) ---
+  // --- 3. RECUPERACIÓN DE DATOS ---
   useEffect(() => {
     const stateAnalysis = (location.state as { analysis?: IAnalysis })?.analysis;
 
@@ -67,16 +69,9 @@ function ScannerResults() {
   }, [analysisId, location.state]);
 
   // --- 4. INTEGRACIÓN DEL WORKER ---
-  const { detectedParasites, isLoading } = useImageAnalysisWorker(
-    imageLoaded,
-    analysis,
-    imgRef,
-    canvasRef,
-    progressBarRef,
-    scannerContainerRef
-  );
+  const { detectedParasites, isLoading } = useImageAnalysisWorker();
 
-  // --- 5. LÓGICA DE AGREGACIÓN (Corregida: Itera sobre IBoundingBox directamente) ---
+  // --- 5. LÓGICA DE AGREGACIÓN ---
   const aggregatedData = useMemo<IDetectedParasite[]>(() => {
     if (!detectedParasites || detectedParasites.length === 0) return [];
 
@@ -98,7 +93,7 @@ function ScannerResults() {
 
     return Object.values(parasitesMap).map((p) => ({
       label: p.label,
-      value: Number(((p.sum / p.count) * 100).toFixed(2)), // Porcentaje clínico
+      value: Number(((p.sum / p.count) * 100).toFixed(2)),
     }));
   }, [detectedParasites]);
 
