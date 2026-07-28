@@ -1,6 +1,6 @@
 // logic.test.ts
 import { describe, it, expect } from 'vitest';
-import { calculateIoU, applyNMS, BoundingBoxCandidate } from '../workers/yoloUtils';
+import { calculateIoU, applyNMS, BoundingBoxCandidate } from '../utils/yoloUtils';
 import { recentAnalyses } from '../assets/constants';
 
 describe('YOLO Math Utils: Intersection over Union (IoU)', () => {

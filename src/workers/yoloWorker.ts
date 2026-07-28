@@ -1,5 +1,5 @@
 import * as ort from 'onnxruntime-web';
-import { applyNMS } from './yoloUtils';
+import { applyNMS } from '../utils/yoloUtils';
 
 ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/';
 

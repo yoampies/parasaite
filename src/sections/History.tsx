@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHistoryStore } from '../hooks/UseHistoryStore';
 import { Diagnosis } from '../db/localDB';
+import { exportDiagnosesToCSV } from '../utils/csvExporter';
 
 // Components
 import Card from '../components/Card';
@@ -140,6 +141,12 @@ function History() {
               <h2 className="text-[#101816] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">
                 Análisis Recientes
               </h2>
+              <button
+                onClick={exportDiagnosesToCSV}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+              >
+                Exportar Todo (CSV)
+              </button>
               {isLoading ? (
                 <p className="px-4 text-[#5e8d81] italic">Cargando historial...</p>
               ) : filteredAndSortedAnalyses.length > 0 ? (

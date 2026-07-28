@@ -23,7 +23,7 @@ export interface Diagnosis {
   isSynced: boolean;
   detectedParasitesCount?: number;
   imgURL?: string;
-  detections?: DetectionDetail[]; // <--- AQUÍ se persisten las detecciones de YOLO
+  detections?: DetectionDetail[];
 }
 
 export interface DetectionFrame {
