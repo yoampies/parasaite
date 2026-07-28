@@ -19,12 +19,8 @@ import { IAnalysis, IDetectedParasite, IBoundingBox } from '../types';
 import useImageAnalysisWorker from '../hooks/UseImageAnalysisWorker';
 import { useHistoryStore } from '../hooks/UseHistoryStore';
 import { db, DetectionDetail, Diagnosis } from '../db/localDB';
+import { CapturedFrameData } from './Scanner';
 
-/**
- * @description Componente de visualización de resultados diagnósticos con soporte para múltiples fotogramas.
- * Permite navegar por los frames capturados, ejecutar YOLOv8 sobre el frame activo, asociar el paciente en Dexie.js
- * y aplicar validación clínica (Active Learning).
- */
 export function ScannerResults() {
   const { analysisId } = useParams<{ analysisId: string }>();
   const location = useLocation();
@@ -32,13 +28,14 @@ export function ScannerResults() {
 
   const loadFrameForDiagnosis = useHistoryStore((state) => state.loadFrameForDiagnosis);
 
-  // --- 1. ESTADO GENERAL Y CARROUSEL DE FOTOGRAMAS ---
+  // --- 1. ESTADO GENERAL Y CARRUSEL DE FOTOGRAMAS ---
   const [analysis, setAnalysis] = useState<IAnalysis | null>(null);
-  const [, setCapturedFramesBlobs] = useState<Blob[]>([]);
   const [frameUrls, setFrameUrls] = useState<string[]>([]);
+  const [frameDetections, setFrameDetections] = useState<IBoundingBox[][]>([]);
   const [currentFrameIndex, setCurrentFrameIndex] = useState<number>(0);
 
   const [savedDetections, setSavedDetections] = useState<IBoundingBox[] | null>(null);
+  const [isHistoricalRecord, setIsHistoricalRecord] = useState<boolean>(false);
   const [imageLoaded, setImageLoaded] = useState<boolean>(false);
   const [isFetchingLocal, setIsFetchingLocal] = useState<boolean>(true);
 
@@ -63,54 +60,61 @@ export function ScannerResults() {
     const fetchAnalysisData = async () => {
       setIsFetchingLocal(true);
 
-      // A) Revisar si recibimos fotogramas/blobs en el state del React Router (desde Scanner)
       const locationState = location.state as {
-        capturedFrames?: (Blob | string)[];
+        capturedFrames?: CapturedFrameData[] | Blob[] | string[];
         primaryImageBlob?: Blob;
         analysis?: IAnalysis;
       };
       const passedFrames = locationState?.capturedFrames || [];
 
+      // A) Carga desde Scanner en caliente
       if (passedFrames.length > 0) {
-        const blobs: Blob[] = [];
+        const detectionsList: IBoundingBox[][] = [];
+
         passedFrames.forEach((frame) => {
-          if (frame instanceof Blob) {
-            blobs.push(frame);
+          if (typeof frame === 'object' && 'blob' in frame) {
+            const frameObj = frame as CapturedFrameData;
+            generatedUrls.push(URL.createObjectURL(frameObj.blob));
+            detectionsList.push(frameObj.detections || []);
+          } else if (frame instanceof Blob) {
             generatedUrls.push(URL.createObjectURL(frame));
+            detectionsList.push([]);
           } else if (typeof frame === 'string') {
             generatedUrls.push(frame);
+            detectionsList.push([]);
           }
         });
+
         if (isMounted) {
-          setCapturedFramesBlobs(blobs);
           setFrameUrls(generatedUrls);
+          setFrameDetections(detectionsList);
         }
       }
 
-      // B) Carga desde Dexie.js mediante ID de parámetro en la URL
+      // B) Carga desde IndexedDB (Navegación desde History)
       if (analysisId && !isNaN(Number(analysisId))) {
         const idNum = Number(analysisId);
         try {
           const diagRecord = await db.diagnoses.get(idNum);
+
           if (diagRecord && isMounted) {
+            setIsHistoricalRecord(true); // Marca explícita de registro previo
+
             if (diagRecord.patientLocalId) {
               setSelectedPatientId(diagRecord.patientLocalId);
             }
 
-            // Si no teníamos URLs pasadas desde el router, recuperamos la imagen guardada
             if (generatedUrls.length === 0) {
               const blob = await loadFrameForDiagnosis(idNum);
               if (blob) {
                 const singleUrl = URL.createObjectURL(blob);
                 generatedUrls.push(singleUrl);
-                setCapturedFramesBlobs([blob]);
-                setFrameUrls([singleUrl]);
               } else if (locationState?.analysis?.imgURL) {
-                setFrameUrls([locationState.analysis.imgURL]);
+                generatedUrls.push(locationState.analysis.imgURL);
               }
+              setFrameUrls([...generatedUrls]);
             }
 
-            // Detecciones previas guardadas
             if (diagRecord.detections && diagRecord.detections.length > 0) {
               const mappedBoxes: IBoundingBox[] = diagRecord.detections.map(
                 (d: DetectionDetail) => {
@@ -130,10 +134,11 @@ export function ScannerResults() {
               id: diagRecord.id || idNum,
               date: diagRecord.date,
               content: diagRecord.parasiteFound || 'Análisis completado',
-              imgURL: generatedUrls[0] || '',
+              imgURL: generatedUrls[0] || locationState?.analysis?.imgURL || '',
               detectedParasites: [],
               fileName: `muestra_${diagRecord.id || idNum}.jpg`,
             });
+
             setIsFetchingLocal(false);
             return;
           }
@@ -142,8 +147,9 @@ export function ScannerResults() {
         }
       }
 
-      // C) Fallback: datos sintéticos o de memoria local
+      // C) Fallback si viene el objeto analysis por la ruta (History)
       if (locationState?.analysis && isMounted) {
+        setIsHistoricalRecord(true);
         setAnalysis(locationState.analysis);
         if (locationState.analysis.imgURL && generatedUrls.length === 0) {
           setFrameUrls([locationState.analysis.imgURL]);
@@ -152,12 +158,14 @@ export function ScannerResults() {
         return;
       }
 
+      // D) Fallback desde constantes locales
       const localData = localStorage.getItem('recentAnalyses');
       const localAnalyses: IAnalysis[] = localData ? JSON.parse(localData) : [];
       const allData = [...localAnalyses, ...recentAnalysesConstant, ...recentImages] as IAnalysis[];
       const foundAnalysis = allData.find((a) => a.id.toString() === analysisId);
 
       if (isMounted) {
+        setIsHistoricalRecord(true);
         setAnalysis(foundAnalysis || null);
         if (foundAnalysis?.imgURL && generatedUrls.length === 0) {
           setFrameUrls([foundAnalysis.imgURL]);
@@ -176,7 +184,6 @@ export function ScannerResults() {
     };
   }, [analysisId, location.state, loadFrameForDiagnosis]);
 
-  // AUTO-SELECCIONAR EL PRIMER PACIENTE DE DEXIE SI NO HAY NINGUNO ASIGNADO
   useEffect(() => {
     const firstPatientId = patients?.[0]?.id;
 
@@ -185,19 +192,42 @@ export function ScannerResults() {
     }
   }, [patients, selectedPatientId]);
 
-  // --- 5. WORKER DE INFERENCIA IA (YOLOv8) ---
+  // --- 5. WORKER DE INFERENCIA IA ---
   const { detectedParasites: liveDetections, isLoading, processSource } = useImageAnalysisWorker();
 
-  // Re-ejecutar YOLOv8 cuando la imagen cambia o el usuario navega por el carrusel
+  const currentFrozenDetections = frameDetections[currentFrameIndex];
+
+  // INHIBIR PREDICCIÓN: No procesar si es un registro histórico o ya posee detecciones guardadas
   useEffect(() => {
-    if (imageLoaded && imgRef.current && !savedDetections) {
+    const hasSaved = savedDetections && savedDetections.length > 0;
+    const hasFrozen = currentFrozenDetections && currentFrozenDetections.length > 0;
+
+    if (
+      !isFetchingLocal &&
+      !isHistoricalRecord &&
+      imageLoaded &&
+      imgRef.current &&
+      !hasSaved &&
+      !hasFrozen
+    ) {
       processSource(imgRef.current);
     }
-  }, [imageLoaded, currentFrameIndex, processSource, savedDetections]);
+  }, [
+    imageLoaded,
+    currentFrameIndex,
+    processSource,
+    savedDetections,
+    currentFrozenDetections,
+    isFetchingLocal,
+    isHistoricalRecord,
+  ]);
 
   const activeDetections = useMemo(() => {
-    return savedDetections || liveDetections || [];
-  }, [savedDetections, liveDetections]);
+    if (savedDetections && savedDetections.length > 0) return savedDetections;
+    if (currentFrozenDetections && currentFrozenDetections.length > 0)
+      return currentFrozenDetections;
+    return liveDetections || [];
+  }, [savedDetections, currentFrozenDetections, liveDetections]);
 
   // --- 6. RENDERIZADO DE BOUNDING BOXES EN CANVAS ---
   useEffect(() => {
@@ -233,8 +263,7 @@ export function ScannerResults() {
 
       const label = `${parasiteTypes[item.classId] || 'Parásito'} ${(item.confidence * 100).toFixed(0)}%`;
       ctx.font = '600 11px Inter, sans-serif';
-      const textMetrics = ctx.measureText(label);
-      const textWidth = textMetrics.width;
+      const textWidth = ctx.measureText(label).width;
       const textHeight = 16;
 
       const labelX = x;
@@ -311,7 +340,7 @@ export function ScannerResults() {
     }
   };
 
-  // VALIDACIÓN MÉDICA (ACTIVE LEARNING)
+  // VALIDACIÓN MÉDICA
   const handleDoctorValidation = async (
     actionType: 'CORRECT' | 'FALSE_POSITIVE' | 'RELABEL',
     updatedFields: Partial<Diagnosis>
@@ -373,11 +402,15 @@ export function ScannerResults() {
   }
 
   const currentFrameUrl = frameUrls[currentFrameIndex] || analysis?.imgURL || '';
+  const isAnalyzingWithModel =
+    isLoading &&
+    !isHistoricalRecord &&
+    !savedDetections &&
+    (!currentFrozenDetections || currentFrozenDetections.length === 0);
 
   return (
     <div className="relative flex size-full min-h-screen flex-col bg-white font-inter overflow-x-hidden print:bg-white print:text-black print:p-0">
       <div className="layout-container flex h-full grow flex-col">
-        {/* CABECERA EXCLUSIVA IMPRESIÓN */}
         <div className="hidden print:block print:p-[0.5in] print:pb-4 print:mb-4 print:border-b-2 print:border-slate-800">
           <div className="flex justify-between items-center">
             <div>
@@ -399,7 +432,6 @@ export function ScannerResults() {
 
         <main className="gap-1 px-6 flex flex-1 justify-center py-5 print:p-[0.5in] print:py-0 print:w-[8.5in] print:max-w-none print:m-0">
           <div className="layout-content-container flex flex-col max-w-[920px] flex-1">
-            {/* CABECERA PANTALLA Y ACCIONES */}
             <header className="flex flex-wrap justify-between items-center gap-3 p-4 print:hidden">
               <div className="flex flex-col gap-2">
                 <button
@@ -421,7 +453,6 @@ export function ScannerResults() {
               </button>
             </header>
 
-            {/* VISOR DE FOTOGRAMAS CON BOUNDING BOXES */}
             <section
               className="flex flex-col w-full bg-white p-4 justify-center items-center rounded-2xl border border-[#dae7e3] shadow-sm print:p-0 print:border-0"
               ref={scannerContainerRef}
@@ -442,10 +473,9 @@ export function ScannerResults() {
                   className="absolute inset-0 w-full h-full pointer-events-none z-10"
                 />
 
-                {/* OVERLAY DE CARGA DE IA */}
                 <div
                   className={`absolute inset-0 flex items-center justify-center bg-black/60 text-white backdrop-blur-sm flex-col z-30 transition-opacity duration-300 print:hidden ${
-                    isLoading && !savedDetections ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    isAnalyzingWithModel ? 'opacity-100' : 'opacity-0 pointer-events-none'
                   }`}
                 >
                   <p className="text-sm font-medium">
@@ -457,7 +487,7 @@ export function ScannerResults() {
                 </div>
               </div>
 
-              {/* CONTROLES DE NAVEGACIÓN DEL CARRUSEL */}
+              {/* CONTROLES DEL CARRUSEL: Se muestran si existen más de un fotograma */}
               {frameUrls.length > 1 && (
                 <div className="flex items-center justify-between w-full max-w-md mt-4 px-2 print:hidden">
                   <button
@@ -483,7 +513,6 @@ export function ScannerResults() {
               )}
             </section>
 
-            {/* SECCIÓN VINCULAR CON PACIENTE (DEXIE) */}
             <section className="bg-white p-5 rounded-2xl border border-[#dae7e3] shadow-sm mt-6 print:hidden">
               <div className="flex items-center gap-2 text-[#101816] font-bold text-base mb-3">
                 <User className="w-5 h-5 text-[#00c795]" />
@@ -517,7 +546,6 @@ export function ScannerResults() {
               </div>
             </section>
 
-            {/* TABLA DE DETECCIONES */}
             <section className="py-4 print:px-0">
               <h3 className="text-[#101816] text-lg font-bold leading-tight mb-3">
                 Parásitos Identificados
@@ -529,7 +557,6 @@ export function ScannerResults() {
               />
             </section>
 
-            {/* FIRMA Y SELLO EN IMPRESIÓN */}
             <div className="hidden print:block print:pt-16">
               <div className="flex justify-between items-end px-12">
                 <div className="text-center w-64 border-t border-slate-800 pt-2">
@@ -542,7 +569,6 @@ export function ScannerResults() {
             </div>
           </div>
 
-          {/* BARRA LATERAL CON MÉTRICAS Y VALIDACIÓN CLÍNICA */}
           <aside className="layout-content-container flex flex-col w-[360px] hidden xl:flex print:hidden">
             <h3 className="text-[#101816] text-base font-bold px-4 pt-2">
               Distribución por Confianza
@@ -563,7 +589,6 @@ export function ScannerResults() {
               </div>
             </div>
 
-            {/* PANEL ACTIVE LEARNING */}
             <section className="p-4 bg-[#f0f5f4] m-4 rounded-2xl border border-[#dae7e3] flex flex-col gap-3">
               <div>
                 <h3 className="text-[#101816] text-sm font-bold mb-1">
