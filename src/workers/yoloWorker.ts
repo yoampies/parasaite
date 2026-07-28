@@ -119,3 +119,5 @@ self.onmessage = async (event: MessageEvent) => {
     }
   }
 };
+
+console.log('se corrio de nuevo');

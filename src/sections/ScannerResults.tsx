@@ -149,7 +149,7 @@ function ScannerResults() {
     return savedDetections || liveDetections || [];
   }, [savedDetections, liveDetections]);
 
-  // --- 6. DIBUJAR BOUNDING BOXES EXACTOS SOBRE CADAN PARÁSITO ---
+  // --- 6. DIBUJAR BOUNDING BOXES EXACTOS SOBRE CADA PARÁSITO ---
   useEffect(() => {
     const canvas = canvasRef.current;
     const img = imgRef.current;
@@ -313,36 +313,66 @@ function ScannerResults() {
               </div>
             </header>
 
-            <section className="flex w-full grow bg-white p-4" ref={scannerContainerRef}>
-              <div className="w-full gap-1 overflow-hidden bg-gray-50 aspect-[3/2] rounded-lg flex relative border border-[#dae7e3] items-center justify-center">
-                {/* Contenedor estricto para que la imagen y el canvas se superpongan milimétricamente */}
-                <div className="relative inline-flex items-center justify-center h-full max-w-full">
-                  {imageUrl && (
-                    <img
-                      ref={imgRef}
-                      src={imageUrl}
-                      alt="Muestra microscópica"
-                      className="max-h-full max-w-full object-contain block z-0"
-                      onLoad={() => setImageLoaded(true)}
-                    />
-                  )}
-
-                  <canvas
-                    ref={canvasRef}
-                    className="absolute inset-0 w-full h-full pointer-events-none z-10"
+            <section
+              className="flex w-full grow bg-white p-4 justify-center items-center"
+              ref={scannerContainerRef}
+            >
+              {/* Contenedor ajustado estrictamente a la imagen para evitar desalineaciones con canvas y recuadros */}
+              <div className="relative inline-block max-w-full bg-gray-50 rounded-lg border border-[#dae7e3] overflow-hidden">
+                {imageUrl && (
+                  <img
+                    ref={imgRef}
+                    src={imageUrl}
+                    alt="Muestra microscópica"
+                    className="max-h-[500px] w-auto block object-contain rounded-lg z-0"
+                    onLoad={() => setImageLoaded(true)}
                   />
-                </div>
+                )}
 
-                {/* OVERLAY DE CARGA SOLO CUANDO REALMENTE SE ESTÁ EJECUTANDO EL WORKER NUEVO */}
-                <div
-                  className={`absolute inset-0 flex items-center justify-center bg-black/60 text-white backdrop-blur-sm flex-col z-20 transition-opacity duration-500 ${
-                    isLoading && !savedDetections ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                  }`}
-                >
-                  <p className="text-lg font-medium">Analizando morfología con IA...</p>
-                  <div className="w-4/5 h-2 bg-white/20 rounded-full mt-4 overflow-hidden">
-                    <div className="h-full bg-[#00c795] animate-pulse w-full" />
-                  </div>
+                <canvas
+                  ref={canvasRef}
+                  className="absolute inset-0 w-full h-full pointer-events-none z-10"
+                />
+
+                {/* Capa opcional para HTML overlays basados en porcentajes si se requiere */}
+                <div className="absolute inset-0 pointer-events-none z-20">
+                  {activeDetections.map((detection, index) => {
+                    const [normX1, normY1, normX2, normY2] = detection.box;
+                    const left = normX1 * 100;
+                    const top = normY1 * 100;
+                    const width = (normX2 - normX1) * 100;
+                    const height = (normY2 - normY1) * 100;
+
+                    return (
+                      <div
+                        key={index}
+                        className="absolute border-2 border-emerald-400 bg-emerald-500/10 rounded-sm"
+                        style={{
+                          left: `${left}%`,
+                          top: `${top}%`,
+                          width: `${width}%`,
+                          height: `${height}%`,
+                        }}
+                      >
+                        <span className="absolute -top-6 left-0 bg-emerald-500 text-white text-[10px] sm:text-xs font-semibold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                          {parasiteTypes[detection.classId] || 'Parásito'}{' '}
+                          {Math.round(detection.confidence * 100)}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* OVERLAY DE CARGA SOLO CUANDO REALMENTE SE ESTá EJECUTANDO EL WORKER NUEVO */}
+              <div
+                className={`absolute inset-0 flex items-center justify-center bg-black/60 text-white backdrop-blur-sm flex-col z-30 transition-opacity duration-500 ${
+                  isLoading && !savedDetections ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                <p className="text-lg font-medium">Analizando morfología con IA...</p>
+                <div className="w-4/5 h-2 bg-white/20 rounded-full mt-4 overflow-hidden">
+                  <div className="h-full bg-[#00c795] animate-pulse w-full" />
                 </div>
               </div>
             </section>
