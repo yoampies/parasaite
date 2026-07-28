@@ -49,11 +49,16 @@ export const useHistoryStore = create<HistoryState>((set) => ({
         await db.detectionFrames.add({
           diagnosisId: diagId,
           imageBlob: imageFile,
+          fileName: `muestra_${diagId}.png`,
         });
 
         await db.pendingSyncs.add({
           diagnosisId: diagId,
+          action: 'CREATE',
+          payload: diagnosisData,
+          timestamp: new Date().toISOString(),
           retryCount: 0,
+          status: 'PENDING',
         });
 
         const updatedHistory = await db.diagnoses.orderBy('date').reverse().toArray();

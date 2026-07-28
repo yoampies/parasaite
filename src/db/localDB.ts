@@ -7,11 +7,10 @@ export interface Patient {
   age: number;
 }
 
-// Estructura de cada parásito individual detectado por YOLOv8
 export interface DetectionDetail {
-  bbox: [number, number, number, number]; // Coordenadas [x, y, ancho, alto]
-  class: string; // Nombre de la especie (ej. "Ascaris lumbricoides")
-  confidence: number; // Nivel de confianza (0.0 a 1.0)
+  bbox: [number, number, number, number];
+  class: string;
+  confidence: number;
 }
 
 export interface Diagnosis {
@@ -31,12 +30,20 @@ export interface DetectionFrame {
   diagnosisId: number;
   imageBlob: Blob;
   thumbnailBlob?: Blob;
+  fileName?: string;
 }
+
+export type SyncAction = 'CREATE' | 'CORRECT' | 'FALSE_POSITIVE' | 'RELABEL';
+export type SyncStatus = 'PENDING' | 'FAILED' | 'SUCCESS';
 
 export interface PendingSync {
   id?: number;
   diagnosisId: number;
+  action?: SyncAction;
+  payload?: Partial<Diagnosis>;
+  timestamp?: string;
   retryCount: number;
+  status?: SyncStatus;
 }
 
 export class ParasiteDB extends Dexie {
@@ -48,12 +55,19 @@ export class ParasiteDB extends Dexie {
   constructor() {
     super('ParasAIteDB');
 
-    // Incrementamos la versión para Dexie si agregamos o modificamos la estructura
+    // Mantenemos la versión 1 y actualizamos a versión 2 con índices para búsquedas óptimas
     this.version(1).stores({
       patients: '++id, localId, name',
       diagnoses: '++id, patientLocalId, date, parasiteFound, isSynced',
       detectionFrames: '++id, diagnosisId',
       pendingSyncs: '++id, diagnosisId',
+    });
+
+    this.version(2).stores({
+      patients: '++id, localId, name',
+      diagnoses: '++id, patientLocalId, date, parasiteFound, isSynced',
+      detectionFrames: '++id, diagnosisId',
+      pendingSyncs: '++id, diagnosisId, status, action',
     });
   }
 }

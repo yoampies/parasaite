@@ -5,7 +5,6 @@ import Navbar from './components/Navbar';
 import Home from './sections/Home';
 import Scanner from './sections/Scanner';
 import ScannerResults from './sections/ScannerResults';
-import ScannerFeedback from './sections/ScannerFeedback';
 import { useNetworkSync } from './hooks/UseNetworkSync';
 
 const History = lazy(() => import('./sections/History'));
@@ -42,7 +41,6 @@ const App = (): React.ReactElement => {
             <Route path="/" element={<Home />} />
             <Route path="/scanner" element={<Scanner />} />
             <Route path="/results/:analysisId" element={<ScannerResults />} />
-            <Route path="/feedback/:analysisId" element={<ScannerFeedback />} />
             <Route path="/history" element={<History />} />
             <Route path="/library" element={<Library />} />
             <Route path="/library/:parasiteName" element={<ParasiteDetails />} />

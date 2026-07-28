@@ -16,11 +16,11 @@ import {
 import { IAnalysis, IDetectedParasite, IBoundingBox } from '../types';
 import useImageAnalysisWorker from '../hooks/UseImageAnalysisWorker';
 import { useHistoryStore } from '../hooks/UseHistoryStore';
-import { db, DetectionDetail } from '../db/localDB';
+import { db, DetectionDetail, Diagnosis } from '../db/localDB';
 
 /**
  * @description Componente de visualización de resultados diagnósticos.
- * Recupera la muestra desde Dexie.js o estado local. Incluye exportación a CSV y PDF de impresión.
+ * Recupera la muestra desde Dexie.js o estado local. Incluye validación médica (Active Learning) y exportaciones.
  */
 function ScannerResults() {
   const { analysisId } = useParams<{ analysisId: string }>();
@@ -36,6 +36,11 @@ function ScannerResults() {
   const [imageLoaded, setImageLoaded] = useState<boolean>(false);
   const [isFetchingLocal, setIsFetchingLocal] = useState<boolean>(true);
   const [patientLocalId, setPatientLocalId] = useState<string>('N/A');
+
+  // Estados de validación clínica (Active Learning)
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [selectedSpecies, setSelectedSpecies] = useState<string>('');
+  const [isSubmittingValidation, setIsSubmittingValidation] = useState<boolean>(false);
 
   // --- 2. REFS PARA PROCESAMIENTO Y CANVAS ---
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -148,7 +153,7 @@ function ScannerResults() {
     return savedDetections || liveDetections || [];
   }, [savedDetections, liveDetections]);
 
-  // --- 6. DIBUJAR BOUNDING BOXES SOBRE CANVA ---
+  // --- 6. DIBUJAR BOUNDING BOXES SOBRE CANVAS ---
   useEffect(() => {
     const canvas = canvasRef.current;
     const img = imgRef.current;
@@ -245,6 +250,7 @@ function ScannerResults() {
           confidence: topParasite ? topParasite.value / 100 : 0.8,
           detectedParasitesCount: liveDetections.length,
           detections: formattedDetections,
+          isSynced: false,
         })
         .catch((err) => {
           console.error('Error al actualizar resultados de IA en Dexie:', err);
@@ -256,12 +262,61 @@ function ScannerResults() {
           confidence: 1.0,
           detectedParasitesCount: 0,
           detections: [],
+          isSynced: false,
         })
         .catch((err) => {
           console.error('Error al actualizar resultado negativo en Dexie:', err);
         });
     }
   }, [isLoading, aggregatedData, liveDetections, savedDetections, analysisId, imageLoaded]);
+
+  // --- 9. ACCIÓN DE VALIDACIÓN CLÍNICA (ACTIVE LEARNING) ---
+  const handleDoctorValidation = async (
+    actionType: 'CORRECT' | 'FALSE_POSITIVE' | 'RELABEL',
+    updatedFields: Partial<Diagnosis>
+  ) => {
+    if (!analysisId || isNaN(Number(analysisId))) return;
+    const idNum = Number(analysisId);
+
+    setIsSubmittingValidation(true);
+    try {
+      await db.transaction('rw', [db.diagnoses, db.pendingSyncs], async () => {
+        // 1. Actualizar el diagnóstico localmente
+        await db.diagnoses.update(idNum, {
+          ...updatedFields,
+          isSynced: false,
+        });
+
+        // 2. Registrar la acción en la cola de sincronización
+        await db.pendingSyncs.add({
+          diagnosisId: idNum,
+          action: actionType,
+          payload: updatedFields,
+          timestamp: new Date().toISOString(),
+          retryCount: 0,
+          status: 'PENDING',
+        });
+      });
+
+      // Actualizar el estado visual del análisis en pantalla
+      setAnalysis((prev) =>
+        prev
+          ? {
+              ...prev,
+              content: updatedFields.parasiteFound || prev.content,
+            }
+          : null
+      );
+
+      alert('Validación guardada en local. Se sincronizará automáticamente con el servidor.');
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error guardando la validación médica:', error);
+      alert('Ocurrió un error al guardar la validación.');
+    } finally {
+      setIsSubmittingValidation(false);
+    }
+  };
 
   const handleSendFeedback = () => {
     if (analysis) {
@@ -326,11 +381,10 @@ function ScannerResults() {
                   ← Volver
                 </button>
                 <h1 className="text-[#101816] tracking-light text-[32px] font-bold leading-tight">
-                  Resultados del Análisis
+                  Resultados del Análisis #{analysis.id}
                 </h1>
               </div>
 
-              {/* Botones de Exportación CSV y PDF */}
               <div className="mt-2 sm:mt-0">
                 <button
                   onClick={() => window.print()}
@@ -429,17 +483,17 @@ function ScannerResults() {
             </div>
           </div>
 
-          {/* BARRA LATERAL GRÁFICOS Y FEEDBACK (Oculta al imprimir) */}
+          {/* BARRA LATERAL GRÁFICOS Y VALIDACIÓN CLÍNICA (Oculta al imprimir) */}
           <aside className="layout-content-container flex flex-col w-[360px] hidden xl:flex print:hidden">
             <h3 className="text-[#101816] text-lg font-bold leading-tight px-4 pb-2 pt-4">
               Distribución de Confianza
             </h3>
-            <div className="flex flex-wrap gap-4 px-4 py-6">
+            <div className="flex flex-wrap gap-4 px-4 py-3">
               <div className="flex min-w-72 flex-1 flex-col gap-2 rounded-lg border border-[#dae7e3] p-6 bg-[#fbfcfc]">
                 <p className="text-[#101816] text-sm font-medium uppercase text-gray-500">
                   Promedio por Especie
                 </p>
-                <div className="h-[250px]">
+                <div className="h-[220px]">
                   <HorizontalBarChart
                     data={aggregatedData.length > 0 ? aggregatedData : analysis.detectedParasites}
                   />
@@ -447,20 +501,100 @@ function ScannerResults() {
               </div>
             </div>
 
-            <section className="p-4 bg-[#f0f5f4] m-4 rounded-xl border border-[#dae7e3]">
-              <h3 className="text-[#101816] text-lg font-bold leading-tight mb-2">
-                Validación Humana
-              </h3>
-              <p className="text-[#5e8d81] text-sm leading-normal mb-4">
-                Como profesional de salud, tu validación es vital. Reporta falsos positivos o
-                errores de segmentación.
-              </p>
-              <button
-                className="w-full flex items-center justify-center rounded-lg h-10 px-4 bg-[#00c795] text-[#101816] text-sm font-bold hover:bg-[#00a67d] transition-colors"
-                onClick={handleSendFeedback}
-              >
-                Enviar Feedback Clínico
-              </button>
+            {/* PANEL DE VALIDACIÓN CLÍNICA (ACTIVE LEARNING) */}
+            <section className="p-4 bg-[#f0f5f4] m-4 rounded-xl border border-[#dae7e3] flex flex-col gap-3">
+              <div>
+                <h3 className="text-[#101816] text-base font-bold leading-tight mb-1">
+                  Validación Experta (Active Learning)
+                </h3>
+                <p className="text-[#5e8d81] text-xs leading-normal">
+                  Valida la precisión del diagnóstico o corrige la etiqueta para retroalimentar el
+                  sistema.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <button
+                  disabled={isSubmittingValidation}
+                  onClick={() => handleDoctorValidation('CORRECT', { isSynced: false })}
+                  className="w-full flex items-center justify-center rounded-lg h-9 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all disabled:opacity-50"
+                >
+                  ✔️ Confirmar Correcto
+                </button>
+
+                <button
+                  disabled={isSubmittingValidation}
+                  onClick={() =>
+                    handleDoctorValidation('FALSE_POSITIVE', {
+                      parasiteFound: 'Sin hallazgos parasitarios',
+                      confidence: 1.0,
+                      isSynced: false,
+                    })
+                  }
+                  className="w-full flex items-center justify-center rounded-lg h-9 px-3 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all disabled:opacity-50"
+                >
+                  ❌ Falso Positivo
+                </button>
+
+                {!isEditing ? (
+                  <button
+                    disabled={isSubmittingValidation}
+                    onClick={() => setIsEditing(true)}
+                    className="w-full flex items-center justify-center rounded-lg h-9 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all disabled:opacity-50"
+                  >
+                    ✏️ Corregir Etiqueta
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2 p-2 bg-white rounded-lg border border-[#dae7e3]">
+                    <select
+                      value={selectedSpecies}
+                      onChange={(e) => setSelectedSpecies(e.target.value)}
+                      className="w-full text-xs p-2 border rounded bg-gray-50 focus:outline-none"
+                    >
+                      <option value="" disabled>
+                        Seleccionar especie...
+                      </option>
+                      {parasiteTypes.map((specie) => (
+                        <option key={specie} value={specie}>
+                          {specie}
+                        </option>
+                      ))}
+                      <option value="Sin hallazgos parasitarios">Sin hallazgos parasitarios</option>
+                    </select>
+
+                    <div className="flex gap-2">
+                      <button
+                        disabled={!selectedSpecies || isSubmittingValidation}
+                        onClick={() =>
+                          handleDoctorValidation('RELABEL', {
+                            parasiteFound: selectedSpecies,
+                            confidence: 1.0,
+                            isSynced: false,
+                          })
+                        }
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs py-1.5 rounded-lg font-semibold transition-colors"
+                      >
+                        Guardar
+                      </button>
+                      <button
+                        onClick={() => setIsEditing(false)}
+                        className="px-3 bg-gray-200 text-gray-700 text-xs py-1.5 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-[#dae7e3]">
+                <button
+                  className="w-full text-xs text-[#5e8d81] hover:text-[#101816] font-medium underline text-center"
+                  onClick={handleSendFeedback}
+                >
+                  ¿Error de segmentación? Enviar feedback detallado
+                </button>
+              </div>
             </section>
           </aside>
         </main>

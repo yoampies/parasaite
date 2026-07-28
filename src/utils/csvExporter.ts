@@ -1,4 +1,3 @@
-// src/utils/csvExporter.ts
 import { db } from '../db/localDB';
 
 export const exportDiagnosesToCSV = async (): Promise<void> => {
@@ -10,7 +9,7 @@ export const exportDiagnosesToCSV = async (): Promise<void> => {
       return;
     }
 
-    const headers = ['ID Local', 'Paciente', 'Fecha', 'Parásito', 'Confianza (%)'];
+    const headers = ['ID Local', 'Paciente', 'Fecha', 'Parásito', 'Confianza (%)', 'Sincronizado'];
 
     const rows = diagnoses.map((d) => {
       const id = d.id ?? '';
@@ -18,8 +17,9 @@ export const exportDiagnosesToCSV = async (): Promise<void> => {
       const date = `"${new Date(d.date).toLocaleString().replace(/"/g, '""')}"`;
       const parasite = `"${(d.parasiteFound ?? '').replace(/,/g, '')}"`;
       const confidence = (d.confidence * 100).toFixed(2);
+      const isSynced = d.isSynced ? 'Sí' : 'No';
 
-      return [id, patientId, date, parasite, confidence].join(',');
+      return [id, patientId, date, parasite, confidence, isSynced].join(',');
     });
 
     const BOM = '\uFEFF';
