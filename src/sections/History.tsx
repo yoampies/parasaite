@@ -1,4 +1,4 @@
-import { useMemo, CSSProperties } from 'react';
+import { useEffect, useState, useMemo, CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHistoryStore } from '../hooks/UseHistoryStore';
 import { Diagnosis } from '../db/localDB';
@@ -26,10 +26,54 @@ const filters: FilterConfig[] = [
 function History() {
   const navigate = useNavigate();
 
-  // Consumimos el Store de Zustand correctamente tipado
-  const { history, searchQuery, setSearchQuery } = useHistoryStore();
+  // Consumimos el store
+  const { history, searchQuery, setSearchQuery, loadHistory, loadFrameForDiagnosis, isLoading } =
+    useHistoryStore();
 
-  // Lógica de filtrado, mapeo y ordenamiento centralizada
+  // Estado local para almacenar el mapa de { diagnosisId -> objectUrl }
+  const [imageUrls, setImageUrls] = useState<Record<number, string>>({});
+
+  // 1. Cargar el historial desde Dexie al montar la vista
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
+  // 2. Cargar asíncronamente los Blobs de imágenes para cada diagnóstico en el historial
+  useEffect(() => {
+    let isMounted = true;
+    const createdUrls: string[] = [];
+
+    const fetchImages = async () => {
+      const urlsMap: Record<number, string> = {};
+
+      for (const item of history) {
+        if (item.id) {
+          const blob = await loadFrameForDiagnosis(item.id);
+          if (blob && isMounted) {
+            const url = URL.createObjectURL(blob);
+            createdUrls.push(url);
+            urlsMap[item.id] = url;
+          }
+        }
+      }
+
+      if (isMounted) {
+        setImageUrls(urlsMap);
+      }
+    };
+
+    if (history.length > 0) {
+      fetchImages();
+    }
+
+    // Limpieza de URLs de memoria al desmontar
+    return () => {
+      isMounted = false;
+      createdUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [history, loadFrameForDiagnosis]);
+
+  // 3. Filtrar, ordenar y mapear los diagnósticos asociando la URL de imagen recuperada
   const filteredAndSortedAnalyses = useMemo(() => {
     return history
       .filter((item: Diagnosis) => {
@@ -46,12 +90,12 @@ function History() {
           id: item.id || 0,
           date: item.date,
           content: item.parasiteFound || 'Análisis completado',
-          imgURL: '', // Se gestionará dinámicamente en ScannerResults mediante el ID
+          imgURL: item.id ? imageUrls[item.id] || '' : '',
           detectedParasites: [],
           fileName: `muestra_${item.id}.jpg`,
         })
       );
-  }, [history, searchQuery]);
+  }, [history, searchQuery, imageUrls]);
 
   const handleCardClick = (analysis: IAnalysis) => {
     navigate(`/results/${analysis.id}`, { state: { analysis } });
@@ -96,7 +140,9 @@ function History() {
               <h2 className="text-[#101816] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">
                 Análisis Recientes
               </h2>
-              {filteredAndSortedAnalyses.length > 0 ? (
+              {isLoading ? (
+                <p className="px-4 text-[#5e8d81] italic">Cargando historial...</p>
+              ) : filteredAndSortedAnalyses.length > 0 ? (
                 filteredAndSortedAnalyses.map((analysis: IAnalysis) => (
                   <Card
                     key={analysis.id}

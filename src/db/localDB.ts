@@ -7,6 +7,13 @@ export interface Patient {
   age: number;
 }
 
+// Estructura de cada parásito individual detectado por YOLOv8
+export interface DetectionDetail {
+  bbox: [number, number, number, number]; // Coordenadas [x, y, ancho, alto]
+  class: string; // Nombre de la especie (ej. "Ascaris lumbricoides")
+  confidence: number; // Nivel de confianza (0.0 a 1.0)
+}
+
 export interface Diagnosis {
   id?: number;
   patientLocalId: string;
@@ -16,6 +23,7 @@ export interface Diagnosis {
   isSynced: boolean;
   detectedParasitesCount?: number;
   imgURL?: string;
+  detections?: DetectionDetail[]; // <--- AQUÍ se persisten las detecciones de YOLO
 }
 
 export interface DetectionFrame {
@@ -39,6 +47,8 @@ export class ParasiteDB extends Dexie {
 
   constructor() {
     super('ParasAIteDB');
+
+    // Incrementamos la versión para Dexie si agregamos o modificamos la estructura
     this.version(1).stores({
       patients: '++id, localId, name',
       diagnoses: '++id, patientLocalId, date, parasiteFound, isSynced',

@@ -15,12 +15,12 @@ import {
 import { IAnalysis, IDetectedParasite, IBoundingBox } from '../types';
 import useImageAnalysisWorker from '../hooks/UseImageAnalysisWorker';
 import { useHistoryStore } from '../hooks/UseHistoryStore';
-import { db } from '../db/localDB';
+import { db, DetectionDetail } from '../db/localDB';
 
 /**
  * @description Componente de visualización de resultados diagnósticos.
- * Recupera la muestra desde Dexie.js, procesa la inferencia morfológica con YOLOv8
- * y actualiza el diagnóstico en la base de datos local al finalizar.
+ * Recupera la muestra desde Dexie.js o estado local. Si ya fue analizada previamente,
+ * recupera las detecciones guardadas sin volver a correr el modelo YOLO.
  */
 function ScannerResults() {
   const { analysisId } = useParams<{ analysisId: string }>();
@@ -31,6 +31,8 @@ function ScannerResults() {
 
   // --- 1. ESTADO ---
   const [analysis, setAnalysis] = useState<IAnalysis | null>(null);
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [savedDetections, setSavedDetections] = useState<IBoundingBox[] | null>(null);
   const [imageLoaded, setImageLoaded] = useState<boolean>(false);
   const [isFetchingLocal, setIsFetchingLocal] = useState<boolean>(true);
 
@@ -41,31 +43,49 @@ function ScannerResults() {
 
   // --- 3. RECUPERACIÓN DE LA MUESTRA DESDE DEXIE ---
   useEffect(() => {
-    let activeObjectUrl: string | null = null;
+    let isMounted = true;
+    let createdUrl = '';
 
     const fetchAnalysisData = async () => {
       setIsFetchingLocal(true);
 
       const stateAnalysis = (location.state as { analysis?: IAnalysis })?.analysis;
-      if (stateAnalysis) {
-        setAnalysis(stateAnalysis);
-        setIsFetchingLocal(false);
-        return;
-      }
 
       if (analysisId && !isNaN(Number(analysisId))) {
         const idNum = Number(analysisId);
         try {
           const diagRecord = await db.diagnoses.get(idNum);
-          if (diagRecord) {
+          if (diagRecord && isMounted) {
+            // Cargar imagen desde la tabla de frames en Dexie
             const blob = await loadFrameForDiagnosis(idNum);
-            activeObjectUrl = blob ? URL.createObjectURL(blob) : '';
+            if (blob) {
+              createdUrl = URL.createObjectURL(blob);
+              setImageUrl(createdUrl);
+            } else if (stateAnalysis?.imgURL) {
+              setImageUrl(stateAnalysis.imgURL);
+            }
+
+            // Si el diagnóstico ya contiene detecciones guardadas, las establecemos
+            if (diagRecord.detections && diagRecord.detections.length > 0) {
+              const mappedBoxes: IBoundingBox[] = diagRecord.detections.map(
+                (d: DetectionDetail) => {
+                  const classIdx = parasiteTypes.indexOf(d.class);
+                  return {
+                    box: d.bbox,
+                    classId: classIdx !== -1 ? classIdx : 0,
+                    confidence: d.confidence,
+                    isGreyZone: d.confidence < 0.6,
+                  };
+                }
+              );
+              setSavedDetections(mappedBoxes);
+            }
 
             const mappedAnalysis: IAnalysis = {
               id: diagRecord.id || idNum,
               date: diagRecord.date,
-              content: diagRecord.parasiteFound || 'Análisis en curso...',
-              imgURL: activeObjectUrl,
+              content: diagRecord.parasiteFound || 'Análisis completado',
+              imgURL: createdUrl || stateAnalysis?.imgURL || '',
               detectedParasites: [],
               fileName: `muestra_${diagRecord.id || idNum}.jpg`,
             };
@@ -79,6 +99,14 @@ function ScannerResults() {
         }
       }
 
+      // Si no se encontró en Dexie, buscar en estado o en constantes
+      if (stateAnalysis && isMounted) {
+        setAnalysis(stateAnalysis);
+        if (stateAnalysis.imgURL) setImageUrl(stateAnalysis.imgURL);
+        setIsFetchingLocal(false);
+        return;
+      }
+
       const localData = localStorage.getItem('recentAnalyses');
       const localAnalyses: IAnalysis[] = localData ? JSON.parse(localData) : [];
 
@@ -89,30 +117,39 @@ function ScannerResults() {
       ] as IAnalysis[];
 
       const foundAnalysis = allData.find((a) => a.id.toString() === analysisId);
-      setAnalysis(foundAnalysis || null);
-      setIsFetchingLocal(false);
+      if (isMounted) {
+        setAnalysis(foundAnalysis || null);
+        if (foundAnalysis?.imgURL) setImageUrl(foundAnalysis.imgURL);
+        setIsFetchingLocal(false);
+      }
     };
 
     fetchAnalysisData();
 
     return () => {
-      if (activeObjectUrl) {
-        URL.revokeObjectURL(activeObjectUrl);
+      isMounted = false;
+      if (createdUrl) {
+        URL.revokeObjectURL(createdUrl);
       }
     };
   }, [analysisId, location.state, loadFrameForDiagnosis]);
 
   // --- 4. HOOK DEL WORKER DE IA ---
-  const { detectedParasites, isLoading, processSource } = useImageAnalysisWorker();
+  const { detectedParasites: liveDetections, isLoading, processSource } = useImageAnalysisWorker();
 
-  // --- 5. INFERENCIA CON YOLOV8 AL CARGAR LA IMAGEN EN EL DOM ---
+  // --- 5. INFERENCIA CON YOLOV8 (SOLO SI ES UNA MUESTRA NUEVA SIN DETECCIONES GUARDADAS) ---
   useEffect(() => {
-    if (imageLoaded && imgRef.current) {
+    if (imageLoaded && imgRef.current && !savedDetections) {
       processSource(imgRef.current);
     }
-  }, [imageLoaded, processSource]);
+  }, [imageLoaded, processSource, savedDetections]);
 
-  // --- 6. DIBUJAR BOUNDING BOXES EXACTOS SOBRE CADA PARÁSITO ---
+  // Determinar si usamos detecciones ya guardadas o las recién procesadas
+  const activeDetections = useMemo(() => {
+    return savedDetections || liveDetections || [];
+  }, [savedDetections, liveDetections]);
+
+  // --- 6. DIBUJAR BOUNDING BOXES EXACTOS SOBRE CADAN PARÁSITO ---
   useEffect(() => {
     const canvas = canvasRef.current;
     const img = imgRef.current;
@@ -121,35 +158,30 @@ function ScannerResults() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Ajustar resolución interna y física del canvas exactamente a la visualización de la imagen
     canvas.width = img.clientWidth;
     canvas.height = img.clientHeight;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (
-      !detectedParasites ||
-      detectedParasites.length === 0 ||
+      !activeDetections ||
+      activeDetections.length === 0 ||
       !img.naturalWidth ||
       !img.naturalHeight
     )
       return;
 
-    detectedParasites.forEach((item) => {
-      // 1. Extraer las coordenadas normalizadas [x1, y1, x2, y2]
+    activeDetections.forEach((item) => {
       const [normX1, normY1, normX2, normY2] = item.box;
 
-      // 2. Convertir coordenadas normalizadas a píxeles reales del Canvas
       const x = normX1 * canvas.width;
       const y = normY1 * canvas.height;
       const w = (normX2 - normX1) * canvas.width;
       const h = (normY2 - normY1) * canvas.height;
 
-      // Dibujar caja individual delimitadora
       ctx.strokeStyle = item.isGreyZone ? '#f59e0b' : '#00c795';
       ctx.lineWidth = 2.5;
       ctx.strokeRect(x, y, w, h);
 
-      // Renderizado limpio de la etiqueta clínica asociada a cada caja usando la fuente única de verdad (parasiteTypes)
       const label = `${parasiteTypes[item.classId] || 'Parásito'} ${(item.confidence * 100).toFixed(0)}%`;
       ctx.font = '600 11px Inter, sans-serif';
       const textMetrics = ctx.measureText(label);
@@ -165,13 +197,13 @@ function ScannerResults() {
       ctx.fillStyle = '#ffffff';
       ctx.fillText(label, labelX + 4, labelY + 12);
     });
-  }, [detectedParasites, imageLoaded]);
+  }, [activeDetections, imageLoaded]);
 
   // --- 7. LÓGICA DE AGREGACIÓN DE RESULTADOS ---
   const aggregatedData = useMemo<IDetectedParasite[]>(() => {
-    if (!detectedParasites || detectedParasites.length === 0) return [];
+    if (!activeDetections || activeDetections.length === 0) return [];
 
-    const parasitesMap = (detectedParasites as IBoundingBox[]).reduce(
+    const parasitesMap = (activeDetections as IBoundingBox[]).reduce(
       (acc, currentBox) => {
         const label = parasiteTypes[currentBox.classId] || `Especie ${currentBox.classId}`;
         const value = currentBox.confidence;
@@ -191,37 +223,48 @@ function ScannerResults() {
       label: p.label,
       value: Number(((p.sum / p.count) * 100).toFixed(2)),
     }));
-  }, [detectedParasites]);
+  }, [activeDetections]);
 
-  // --- 8. ACTUALIZACIÓN AUTOMÁTICA EN DEXIE.JS AL FINALIZAR LA INFERENCIA ---
+  // --- 8. ACTUALIZACIÓN AUTOMÁTICA EN DEXIE.JS AL FINALIZAR LA INFERENCIA INICIAL ---
   useEffect(() => {
-    if (isLoading || !analysisId || isNaN(Number(analysisId))) return;
+    // Si las detecciones ya existían en la BD, no sobrescribimos
+    if (savedDetections || isLoading || !analysisId || isNaN(Number(analysisId))) return;
 
     const idNum = Number(analysisId);
 
-    if (aggregatedData.length > 0) {
+    if (liveDetections && liveDetections.length > 0) {
       const topParasite = aggregatedData[0];
+
+      // Mapear detecciones para persistir en Dexie
+      const formattedDetections: DetectionDetail[] = liveDetections.map((d) => ({
+        bbox: d.box,
+        class: parasiteTypes[d.classId] || 'Desconocido',
+        confidence: d.confidence,
+      }));
+
       db.diagnoses
         .update(idNum, {
-          parasiteFound: topParasite.label,
-          confidence: topParasite.value / 100,
-          detectedParasitesCount: detectedParasites.length,
+          parasiteFound: topParasite ? topParasite.label : 'Parásito detectado',
+          confidence: topParasite ? topParasite.value / 100 : 0.8,
+          detectedParasitesCount: liveDetections.length,
+          detections: formattedDetections,
         })
         .catch((err) => {
           console.error('Error al actualizar resultados de IA en Dexie:', err);
         });
-    } else if (detectedParasites && detectedParasites.length === 0 && imageLoaded) {
+    } else if (liveDetections && liveDetections.length === 0 && imageLoaded) {
       db.diagnoses
         .update(idNum, {
           parasiteFound: 'Sin hallazgos parasitarios',
           confidence: 1.0,
           detectedParasitesCount: 0,
+          detections: [],
         })
         .catch((err) => {
           console.error('Error al actualizar resultado negativo en Dexie:', err);
         });
     }
-  }, [isLoading, aggregatedData, detectedParasites, analysisId, imageLoaded]);
+  }, [isLoading, aggregatedData, liveDetections, savedDetections, analysisId, imageLoaded]);
 
   const handleSendFeedback = () => {
     if (analysis) {
@@ -274,10 +317,10 @@ function ScannerResults() {
               <div className="w-full gap-1 overflow-hidden bg-gray-50 aspect-[3/2] rounded-lg flex relative border border-[#dae7e3] items-center justify-center">
                 {/* Contenedor estricto para que la imagen y el canvas se superpongan milimétricamente */}
                 <div className="relative inline-flex items-center justify-center h-full max-w-full">
-                  {analysis.imgURL && (
+                  {imageUrl && (
                     <img
                       ref={imgRef}
-                      src={analysis.imgURL}
+                      src={imageUrl}
                       alt="Muestra microscópica"
                       className="max-h-full max-w-full object-contain block z-0"
                       onLoad={() => setImageLoaded(true)}
@@ -290,10 +333,10 @@ function ScannerResults() {
                   />
                 </div>
 
-                {/* OVERLAY DE CARGA MIENTRAS EL MODELO REALIZA LA DETECCIÓN */}
+                {/* OVERLAY DE CARGA SOLO CUANDO REALMENTE SE ESTÁ EJECUTANDO EL WORKER NUEVO */}
                 <div
                   className={`absolute inset-0 flex items-center justify-center bg-black/60 text-white backdrop-blur-sm flex-col z-20 transition-opacity duration-500 ${
-                    isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    isLoading && !savedDetections ? 'opacity-100' : 'opacity-0 pointer-events-none'
                   }`}
                 >
                   <p className="text-lg font-medium">Analizando morfología con IA...</p>
