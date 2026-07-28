@@ -1,11 +1,12 @@
-// src/App.tsx - Estructura corregida con Navbar y contenedor global
+// src/App.tsx
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar'; // Importamos tu Navbar estática
+import Navbar from './components/Navbar';
 import Home from './sections/Home';
 import Scanner from './sections/Scanner';
-import ScannerResults from './sections/ScannerResults'; // Ajusta el path
+import ScannerResults from './sections/ScannerResults';
 import ScannerFeedback from './sections/ScannerFeedback';
+import { useNetworkSync } from './hooks/UseNetworkSync';
 
 const History = lazy(() => import('./sections/History'));
 const Library = lazy(() => import('./sections/Library'));
@@ -21,6 +22,8 @@ const PageLoader = () => (
 );
 
 const App = (): React.ReactElement => {
+  const isOnline = useNetworkSync();
+
   return (
     <BrowserRouter>
       {/* 1. La Navbar se renderiza fija arriba para toda la aplicación */}
@@ -29,6 +32,12 @@ const App = (): React.ReactElement => {
       {/* 2. Contenedor global con márgenes simétricos idénticos a la sección Home */}
       <main className="bg-white min-h-[calc(100vh-64px)] overflow-hidden">
         <Suspense fallback={<PageLoader />}>
+          {!isOnline && (
+            <div className="bg-amber-600 text-white text-xs font-semibold text-center py-1.5 px-4 sticky top-0 z-50 shadow-md">
+              Modo offline: Las capturas y diagnósticos se guardan localmente y se sincronizarán al
+              recuperar la conexión.
+            </div>
+          )}
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/scanner" element={<Scanner />} />
