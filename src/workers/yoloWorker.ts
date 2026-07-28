@@ -1,4 +1,5 @@
 import * as ort from 'onnxruntime-web';
+import { applyNMS } from './yoloUtils';
 
 ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/';
 
@@ -8,45 +9,6 @@ let isProcessing = false;
 function isMobile(): boolean {
   const ua = navigator.userAgent;
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-}
-
-// Algoritmo de Intersection over Union (IoU)
-function calculateIoU(box1: number[], box2: number[]): number {
-  const [x1, y1, x2, y2] = box1;
-  const [x3, y3, x4, y4] = box2;
-
-  const interX1 = Math.max(x1, x3);
-  const interY1 = Math.max(y1, y3);
-  const interX2 = Math.min(x2, x4);
-  const interY2 = Math.min(y2, y4);
-
-  const interArea = Math.max(0, interX2 - interX1) * Math.max(0, interY2 - interY1);
-  if (interArea === 0) return 0;
-
-  const area1 = (x2 - x1) * (y2 - y1);
-  const area2 = (x4 - x3) * (y4 - y3);
-
-  return interArea / (area1 + area2 - interArea);
-}
-
-// Algoritmo Non-Maximum Suppression (NMS)
-function applyNMS(boxes: any[], iouThreshold = 0.45, maxDetections = 20) {
-  boxes.sort((a, b) => b.confidence - a.confidence);
-  const selected: any[] = [];
-  const active = new Array(boxes.length).fill(true);
-
-  for (let i = 0; i < boxes.length; i++) {
-    if (!active[i]) continue;
-    selected.push(boxes[i]);
-    if (selected.length >= maxDetections) break;
-
-    for (let j = i + 1; j < boxes.length; j++) {
-      if (active[j] && calculateIoU(boxes[i].box, boxes[j].box) > iouThreshold) {
-        active[j] = false;
-      }
-    }
-  }
-  return selected;
 }
 
 self.onmessage = async (event: MessageEvent) => {
