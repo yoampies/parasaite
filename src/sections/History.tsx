@@ -4,7 +4,6 @@ import { useHistoryStore } from '../hooks/UseHistoryStore';
 import { Diagnosis } from '../db/localDB';
 import { exportDiagnosesToCSV } from '../utils/csvExporter';
 
-// Components
 import Card from '../components/Card';
 import Search from '../components/Search';
 import SelectionFilter from '../components/SelectionFilter';
@@ -12,7 +11,6 @@ import ConfidenceLvlFilter from '../components/ConfidenceLvlFilter';
 import CalendarFilter from '../components/CalendarFilter';
 import ButtonFilter from '../components/ButtonFilter';
 
-// Constants & Types
 import { parasiteTypes } from '../assets/constants';
 import { IAnalysis, FilterConfig } from '../types';
 import 'rc-slider/assets/index.css';
@@ -27,19 +25,15 @@ const filters: FilterConfig[] = [
 function History() {
   const navigate = useNavigate();
 
-  // Consumimos el store
   const { history, searchQuery, setSearchQuery, loadHistory, loadFrameForDiagnosis, isLoading } =
     useHistoryStore();
 
-  // Estado local para almacenar el mapa de { diagnosisId -> objectUrl }
   const [imageUrls, setImageUrls] = useState<Record<number, string>>({});
 
-  // 1. Cargar el historial desde Dexie al montar la vista
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
 
-  // 2. Cargar asíncronamente los Blobs de imágenes para cada diagnóstico en el historial
   useEffect(() => {
     let isMounted = true;
     const createdUrls: string[] = [];
@@ -67,14 +61,12 @@ function History() {
       fetchImages();
     }
 
-    // Limpieza de URLs de memoria al desmontar
     return () => {
       isMounted = false;
       createdUrls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [history, loadFrameForDiagnosis]);
 
-  // 3. Filtrar, ordenar y mapear los diagnósticos asociando la URL de imagen recuperada
   const filteredAndSortedAnalyses = useMemo(() => {
     return history
       .filter((item: Diagnosis) => {
@@ -92,13 +84,19 @@ function History() {
           date: item.date,
           content: item.parasiteFound || 'Análisis completado',
           imgURL: item.id ? imageUrls[item.id] || '' : '',
-          detectedParasites: [],
+          detectedParasites: item.detectedParasites || [],
           fileName: `muestra_${item.id}.jpg`,
         })
       );
   }, [history, searchQuery, imageUrls]);
 
   const handleCardClick = (analysis: IAnalysis) => {
+    if (!analysis.id) {
+      console.warn(
+        'ADVERTENCIA: El análisis seleccionado no posee un ID válido, la vista de destino podría fallar.'
+      );
+    }
+
     navigate(`/results/${analysis.id}`, { state: { analysis } });
   };
 
@@ -115,7 +113,6 @@ function History() {
     >
       <div className="layout-container flex h-full grow flex-col">
         <div className="gap-1 px-6 flex flex-1 justify-center py-5">
-          {/* Panel Lateral de Filtros */}
           <aside className="layout-content-container flex flex-col w-80">
             <Search placeholder="Buscar por fecha, hora o parásito" onSearch={setSearchQuery} />
             {filters.map((Filter, index) => (
@@ -123,7 +120,6 @@ function History() {
             ))}
           </aside>
 
-          {/* Listado Principal de Análisis */}
           <main className="layout-content-container flex flex-col max-w-[960px] flex-1">
             <header className="flex flex-wrap justify-between gap-3 p-4">
               <div className="flex min-w-72 flex-col gap-3">

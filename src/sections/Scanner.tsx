@@ -17,46 +17,32 @@ import { Patient } from '../db/localDB';
 import { parasiteTypes } from '../assets/constants';
 import { IBoundingBox } from '../types';
 
-/**
- * Interface para empaquetar la imagen capturada con las detecciones congeladas de YOLOv8
- */
 export interface CapturedFrameData {
   blob: Blob;
   detections: IBoundingBox[];
 }
 
-/**
- * @description Componente de escaneo microscópico en tiempo real con inferencia de YOLOv8 en vivo.
- * Congela las detecciones al capturar fotogramas y mantiene la transmisión de video activa.
- */
 export const Scanner: React.FC = () => {
   const navigate = useNavigate();
   const saveDiagnosis = useHistoryStore((state) => state.saveDiagnosis);
 
-  // --- REFS ---
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // --- ESTADOS DE CÁMARA ---
   const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  // --- ESTADOS DE CAPTURA ---
   const [capturedFrames, setCapturedFrames] = useState<CapturedFrameData[]>([]);
   const [capturedImage, setCapturedImage] = useState<Blob | null>(null);
 
-  // Feedback visual instantáneo al capturar un fotograma
   const [showCaptureFlash, setShowCaptureFlash] = useState<boolean>(false);
 
-  // --- ESTADOS DE PACIENTE Y PROCESAMIENTO ---
   const [selectedPatient] = useState<Patient | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
-  // --- INFERENCIA EN TIEMPO REAL (YOLOv8) ---
   const { detectedParasites: liveDetections, processSource } = useImageAnalysisWorker();
 
-  // Control de inicio / apagado de la cámara On-Demand
   const startCamera = async () => {
     setCameraError(null);
     try {
@@ -84,14 +70,12 @@ export const Scanner: React.FC = () => {
     setIsCameraActive(false);
   }, [stream]);
 
-  // Asignar stream al elemento <video>
   useEffect(() => {
     if (isCameraActive && stream && videoRef.current) {
       videoRef.current.srcObject = stream;
     }
   }, [isCameraActive, stream]);
 
-  // Limpieza al desmontar el componente
   useEffect(() => {
     return () => {
       if (stream) {
@@ -100,7 +84,6 @@ export const Scanner: React.FC = () => {
     };
   }, [stream]);
 
-  // BUCLE DE INFERENCIA EN VIVO SOBRE EL VIDEO
   useEffect(() => {
     let animationFrameId: number;
 
@@ -125,7 +108,6 @@ export const Scanner: React.FC = () => {
     };
   }, [isCameraActive, capturedImage, processSource]);
 
-  // DIBUJAR BOUNDING BOXES EN EL CANVAS EN TIEMPO REAL
   useEffect(() => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -171,7 +153,6 @@ export const Scanner: React.FC = () => {
     });
   }, [liveDetections, isCameraActive, capturedImage]);
 
-  // Capturar un fotograma MANTENIENDO EL VIDEO EN VIVO Y CONGELANDO DETECCIONES
   const captureFrame = useCallback(() => {
     if (!videoRef.current) return;
 
@@ -185,9 +166,7 @@ export const Scanner: React.FC = () => {
       canvas.toBlob((blob) => {
         if (blob) {
           const frozenDetections = liveDetections ? [...liveDetections] : [];
-
           setCapturedFrames((prev) => [...prev, { blob, detections: frozenDetections }]);
-
           setShowCaptureFlash(true);
           setTimeout(() => setShowCaptureFlash(false), 200);
         }
@@ -195,7 +174,6 @@ export const Scanner: React.FC = () => {
     }
   }, [liveDetections]);
 
-  // Carga manual de archivo local
   const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -204,7 +182,6 @@ export const Scanner: React.FC = () => {
     }
   };
 
-  // Guardado en Dexie.js y navegación a Resultados
   const handleProcessAnalysis = async () => {
     if (!capturedImage && capturedFrames.length === 0) return;
 
@@ -212,10 +189,33 @@ export const Scanner: React.FC = () => {
     try {
       const primaryImageBlob = capturedImage || capturedFrames[0]?.blob;
 
+      const allFrameBlobs =
+        capturedFrames.length > 0
+          ? capturedFrames.map((f) => f.blob)
+          : capturedImage
+            ? [capturedImage]
+            : [];
+
       const allDetections = capturedFrames.flatMap((f) => f.detections || []);
       const topDetection = allDetections.reduce(
         (prev, current) => (prev.confidence > current.confidence ? prev : current),
         { classId: 0, confidence: 0 }
+      );
+
+      // Conservamos la lista plana para consultas genéricas rápidas
+      const formattedDetections = allDetections.map((d) => ({
+        class: parasiteTypes[d.classId] || 'Parásito',
+        bbox: d.box,
+        confidence: d.confidence,
+      }));
+
+      // NUEVO: Agrupamos las detecciones respetando a qué fotograma pertenecen
+      const formattedFrameDetections = capturedFrames.map((frame) =>
+        (frame.detections || []).map((d) => ({
+          class: parasiteTypes[d.classId] || 'Parásito',
+          bbox: d.box,
+          confidence: d.confidence,
+        }))
       );
 
       const initialDiagnosisData = {
@@ -227,9 +227,11 @@ export const Scanner: React.FC = () => {
             : 'Sin hallazgos parasitarios',
         confidence: topDetection.confidence,
         detectedParasitesCount: allDetections.length,
+        detections: formattedDetections,
+        frameDetections: formattedFrameDetections, // Guardado estructurado
       };
 
-      const diagnosisId = await saveDiagnosis(initialDiagnosisData, primaryImageBlob);
+      const diagnosisId = await saveDiagnosis(initialDiagnosisData, allFrameBlobs);
 
       stopCamera();
 

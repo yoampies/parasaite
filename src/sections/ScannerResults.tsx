@@ -4,12 +4,10 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ChevronLeft, ChevronRight, User, Save, Printer, ArrowLeft } from 'lucide-react';
 
-// Componentes
 import Table from '../components/Table';
 import HorizontalBarChart from '../components/HorizontalBarChart';
 import Error from '../components/Error';
 
-// Constantes y Tipos
 import {
   recentAnalyses as recentAnalysesConstant,
   recentImages,
@@ -27,8 +25,8 @@ export function ScannerResults() {
   const navigate = useNavigate();
 
   const loadFrameForDiagnosis = useHistoryStore((state) => state.loadFrameForDiagnosis);
+  const loadAllFramesForDiagnosis = useHistoryStore((state) => state.loadAllFramesForDiagnosis);
 
-  // --- 1. ESTADO GENERAL Y CARRUSEL DE FOTOGRAMAS ---
   const [analysis, setAnalysis] = useState<IAnalysis | null>(null);
   const [frameUrls, setFrameUrls] = useState<string[]>([]);
   const [frameDetections, setFrameDetections] = useState<IBoundingBox[][]>([]);
@@ -39,7 +37,6 @@ export function ScannerResults() {
   const [imageLoaded, setImageLoaded] = useState<boolean>(false);
   const [isFetchingLocal, setIsFetchingLocal] = useState<boolean>(true);
 
-  // --- 2. PACIENTE Y VALIDACIÓN CLÍNICA ---
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
   const patients = useLiveQuery(() => db.patients.toArray(), []);
 
@@ -47,12 +44,10 @@ export function ScannerResults() {
   const [selectedSpecies, setSelectedSpecies] = useState<string>('');
   const [isSubmittingValidation, setIsSubmittingValidation] = useState<boolean>(false);
 
-  // --- 3. REFS PARA CANVASES E IMAGEN ---
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
 
-  // --- 4. CARGA DE FOTOGRAMAS Y DATOS DESDE DEXIE / LOCATION ---
   useEffect(() => {
     let isMounted = true;
     const generatedUrls: string[] = [];
@@ -67,7 +62,6 @@ export function ScannerResults() {
       };
       const passedFrames = locationState?.capturedFrames || [];
 
-      // A) Carga desde Scanner en caliente
       if (passedFrames.length > 0) {
         const detectionsList: IBoundingBox[][] = [];
 
@@ -91,31 +85,54 @@ export function ScannerResults() {
         }
       }
 
-      // B) Carga desde IndexedDB (Navegación desde History)
       if (analysisId && !isNaN(Number(analysisId))) {
         const idNum = Number(analysisId);
         try {
           const diagRecord = await db.diagnoses.get(idNum);
 
           if (diagRecord && isMounted) {
-            setIsHistoricalRecord(true); // Marca explícita de registro previo
+            setIsHistoricalRecord(true);
 
             if (diagRecord.patientLocalId) {
               setSelectedPatientId(diagRecord.patientLocalId);
             }
 
             if (generatedUrls.length === 0) {
-              const blob = await loadFrameForDiagnosis(idNum);
-              if (blob) {
-                const singleUrl = URL.createObjectURL(blob);
-                generatedUrls.push(singleUrl);
-              } else if (locationState?.analysis?.imgURL) {
-                generatedUrls.push(locationState.analysis.imgURL);
+              const frames = await loadAllFramesForDiagnosis(idNum);
+
+              if (frames && frames.length > 0) {
+                frames.forEach((frame: any) => {
+                  generatedUrls.push(URL.createObjectURL(frame.imageBlob));
+                });
+              } else {
+                const blob = await loadFrameForDiagnosis(idNum);
+                if (blob) {
+                  const singleUrl = URL.createObjectURL(blob);
+                  generatedUrls.push(singleUrl);
+                } else if (locationState?.analysis?.imgURL) {
+                  generatedUrls.push(locationState.analysis.imgURL);
+                }
               }
               setFrameUrls([...generatedUrls]);
             }
 
-            if (diagRecord.detections && diagRecord.detections.length > 0) {
+            // CORRECCIÓN B: Cargar y respetar las cajas de cada fotograma individualmente
+            if (diagRecord.frameDetections && diagRecord.frameDetections.length > 0) {
+              const mappedFrames: IBoundingBox[][] = diagRecord.frameDetections.map((frame) =>
+                frame.map((d) => {
+                  const classIdx = parasiteTypes.indexOf(d.class);
+                  return {
+                    box: d.bbox,
+                    classId: classIdx !== -1 ? classIdx : 0,
+                    confidence: d.confidence,
+                    isGreyZone: d.confidence < 0.6,
+                  };
+                })
+              );
+              setFrameDetections(mappedFrames);
+              setSavedDetections(mappedFrames.flat()); // Para consistencia de fallback si hiciera falta
+            } else if (diagRecord.detections && diagRecord.detections.length > 0) {
+              // Backward compatibility si el registro viejo no tiene `frameDetections`
               const mappedBoxes: IBoundingBox[] = diagRecord.detections.map(
                 (d: DetectionDetail) => {
                   const classIdx = parasiteTypes.indexOf(d.class);
@@ -127,7 +144,11 @@ export function ScannerResults() {
                   };
                 }
               );
+              const detectionsPerFrame = generatedUrls.map(() => mappedBoxes);
               setSavedDetections(mappedBoxes);
+              setFrameDetections(detectionsPerFrame);
+            } else {
+              setFrameDetections(generatedUrls.map(() => []));
             }
 
             setAnalysis({
@@ -135,7 +156,7 @@ export function ScannerResults() {
               date: diagRecord.date,
               content: diagRecord.parasiteFound || 'Análisis completado',
               imgURL: generatedUrls[0] || locationState?.analysis?.imgURL || '',
-              detectedParasites: [],
+              detectedParasites: diagRecord.detectedParasites || [],
               fileName: `muestra_${diagRecord.id || idNum}.jpg`,
             });
 
@@ -147,7 +168,6 @@ export function ScannerResults() {
         }
       }
 
-      // C) Fallback si viene el objeto analysis por la ruta (History)
       if (locationState?.analysis && isMounted) {
         setIsHistoricalRecord(true);
         setAnalysis(locationState.analysis);
@@ -158,7 +178,6 @@ export function ScannerResults() {
         return;
       }
 
-      // D) Fallback desde constantes locales
       const localData = localStorage.getItem('recentAnalyses');
       const localAnalyses: IAnalysis[] = localData ? JSON.parse(localData) : [];
       const allData = [...localAnalyses, ...recentAnalysesConstant, ...recentImages] as IAnalysis[];
@@ -182,7 +201,7 @@ export function ScannerResults() {
         if (url.startsWith('blob:')) URL.revokeObjectURL(url);
       });
     };
-  }, [analysisId, location.state, loadFrameForDiagnosis]);
+  }, [analysisId, location.state, loadFrameForDiagnosis, loadAllFramesForDiagnosis]);
 
   useEffect(() => {
     const firstPatientId = patients?.[0]?.id;
@@ -192,12 +211,9 @@ export function ScannerResults() {
     }
   }, [patients, selectedPatientId]);
 
-  // --- 5. WORKER DE INFERENCIA IA ---
   const { detectedParasites: liveDetections, isLoading, processSource } = useImageAnalysisWorker();
-
   const currentFrozenDetections = frameDetections[currentFrameIndex];
 
-  // INHIBIR PREDICCIÓN: No procesar si es un registro histórico o ya posee detecciones guardadas
   useEffect(() => {
     const hasSaved = savedDetections && savedDetections.length > 0;
     const hasFrozen = currentFrozenDetections && currentFrozenDetections.length > 0;
@@ -222,14 +238,18 @@ export function ScannerResults() {
     isHistoricalRecord,
   ]);
 
+  // CORRECCIÓN: Respetar las detecciones puras de la diapositiva actual sobre cualquier cosa
   const activeDetections = useMemo(() => {
-    if (savedDetections && savedDetections.length > 0) return savedDetections;
-    if (currentFrozenDetections && currentFrozenDetections.length > 0)
+    if (currentFrozenDetections !== undefined) {
+      // Si el frame no tiene hallazgos, no inventamos. Se devuelve vacío.
       return currentFrozenDetections;
+    }
+
+    // Fallback de retrocompatibilidad
+    if (savedDetections && savedDetections.length > 0) return savedDetections;
     return liveDetections || [];
   }, [savedDetections, currentFrozenDetections, liveDetections]);
 
-  // --- 6. RENDERIZADO DE BOUNDING BOXES EN CANVAS ---
   useEffect(() => {
     const canvas = canvasRef.current;
     const img = imgRef.current;
@@ -277,11 +297,19 @@ export function ScannerResults() {
     });
   }, [activeDetections, imageLoaded, currentFrameIndex]);
 
-  // AGREGACIÓN DE RESULTADOS
+  // CORRECCIÓN: La tabla y las gráficas deben sumar todos los parásitos encontrados en la MUESTRA, no solo en la foto que estás viendo en ese segundo.
   const aggregatedData = useMemo<IDetectedParasite[]>(() => {
-    if (!activeDetections || activeDetections.length === 0) return [];
+    let boxesToAggregate: IBoundingBox[] = [];
 
-    const parasitesMap = (activeDetections as IBoundingBox[]).reduce(
+    if (frameDetections && frameDetections.length > 0) {
+      boxesToAggregate = frameDetections.flat();
+    } else if (activeDetections && activeDetections.length > 0) {
+      boxesToAggregate = activeDetections;
+    }
+
+    if (boxesToAggregate.length === 0) return [];
+
+    const parasitesMap = boxesToAggregate.reduce(
       (acc, currentBox) => {
         const label = parasiteTypes[currentBox.classId] || `Especie ${currentBox.classId}`;
         const value = currentBox.confidence;
@@ -301,9 +329,8 @@ export function ScannerResults() {
       label: p.label,
       value: Number(((p.sum / p.count) * 100).toFixed(2)),
     }));
-  }, [activeDetections]);
+  }, [frameDetections, activeDetections]);
 
-  // NAVEGACIÓN DEL CARRUSEL
   const handlePrevFrame = () => {
     setImageLoaded(false);
     setCurrentFrameIndex((prev) => Math.max(prev - 1, 0));
@@ -314,7 +341,6 @@ export function ScannerResults() {
     setCurrentFrameIndex((prev) => Math.min(prev + 1, frameUrls.length - 1));
   };
 
-  // VINCULACIÓN DE PACIENTE Y GUARDADO FINAL
   const handleSaveDiagnosisAndPatient = async () => {
     if (!selectedPatientId) {
       alert('Por favor selecciona o vincula un paciente antes de confirmar.');
@@ -328,8 +354,22 @@ export function ScannerResults() {
 
     try {
       const idNum = Number(analysisId);
+
+      const frameDetectionsToSave = frameDetections.map((frame) =>
+        frame.map((d) => ({
+          bbox: d.box,
+          class: parasiteTypes[d.classId] || 'Desconocido',
+          confidence: d.confidence,
+        }))
+      );
+
+      const flatDetectionsToSave = frameDetectionsToSave.flat();
+
       await db.diagnoses.update(idNum, {
         patientLocalId: selectedPatientId,
+        detections: flatDetectionsToSave,
+        frameDetections: frameDetectionsToSave, // Grabamos la nueva estructura de aislamiento
+        detectedParasites: aggregatedData,
         isSynced: false,
       });
 
@@ -340,7 +380,6 @@ export function ScannerResults() {
     }
   };
 
-  // VALIDACIÓN MÉDICA
   const handleDoctorValidation = async (
     actionType: 'CORRECT' | 'FALSE_POSITIVE' | 'RELABEL',
     updatedFields: Partial<Diagnosis>
@@ -487,7 +526,6 @@ export function ScannerResults() {
                 </div>
               </div>
 
-              {/* CONTROLES DEL CARRUSEL: Se muestran si existen más de un fotograma */}
               {frameUrls.length > 1 && (
                 <div className="flex items-center justify-between w-full max-w-md mt-4 px-2 print:hidden">
                   <button

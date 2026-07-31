@@ -23,6 +23,9 @@ export interface Diagnosis {
   detectedParasitesCount?: number;
   imgURL?: string;
   detections?: DetectionDetail[];
+  // NUEVO: Almacenará las detecciones agrupadas por su fotograma correspondiente
+  frameDetections?: DetectionDetail[][];
+  detectedParasites?: { label: string; value: number }[];
 }
 
 export interface DetectionFrame {
@@ -55,7 +58,6 @@ export class ParasiteDB extends Dexie {
   constructor() {
     super('ParasAIteDB');
 
-    // Mantenemos la versión 1 y actualizamos a versión 2 con índices para búsquedas óptimas
     this.version(1).stores({
       patients: '++id, localId, name',
       diagnoses: '++id, patientLocalId, date, parasiteFound, isSynced',

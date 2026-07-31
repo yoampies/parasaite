@@ -10,9 +10,13 @@ interface HistoryState {
   loadHistory: () => Promise<void>;
   saveDiagnosis: (
     diagnosisData: Omit<Diagnosis, 'id' | 'isSynced'>,
-    imageFile: Blob
+    imageFiles: Blob[]
   ) => Promise<number>;
   loadFrameForDiagnosis: (diagnosisId: number) => Promise<Blob | null>;
+
+  // 1. Añadimos el tipo aquí en la interfaz
+  loadAllFramesForDiagnosis: (diagnosisId: number) => Promise<any[]>;
+
   clearSelectedFrame: () => void;
 }
 
@@ -36,7 +40,7 @@ export const useHistoryStore = create<HistoryState>((set) => ({
     }
   },
 
-  saveDiagnosis: async (diagnosisData, imageFile) => {
+  saveDiagnosis: async (diagnosisData, imageFiles) => {
     return await db.transaction(
       'rw',
       [db.diagnoses, db.detectionFrames, db.pendingSyncs],
@@ -46,11 +50,14 @@ export const useHistoryStore = create<HistoryState>((set) => ({
           isSynced: false,
         });
 
-        await db.detectionFrames.add({
-          diagnosisId: diagId,
-          imageBlob: imageFile,
-          fileName: `muestra_${diagId}.png`,
-        });
+        // Bucle para guardar TODAS las imágenes en Dexie
+        for (let i = 0; i < imageFiles.length; i++) {
+          await db.detectionFrames.add({
+            diagnosisId: diagId,
+            imageBlob: imageFiles[i],
+            fileName: `muestra_${diagId}_frame_${i}.png`,
+          });
+        }
 
         await db.pendingSyncs.add({
           diagnosisId: diagId,
@@ -78,6 +85,17 @@ export const useHistoryStore = create<HistoryState>((set) => ({
     } catch (error) {
       console.error('Error al consultar el Blob de la imagen:', error);
       return null;
+    }
+  },
+
+  // 2. Insertamos la nueva función aquí, cerca de las consultas de fotogramas
+  loadAllFramesForDiagnosis: async (diagnosisId: number) => {
+    try {
+      const frames = await db.detectionFrames.where({ diagnosisId }).toArray();
+      return frames;
+    } catch (error) {
+      console.error('Error al consultar todos los fotogramas del diagnóstico:', error);
+      return [];
     }
   },
 
