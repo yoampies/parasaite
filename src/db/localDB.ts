@@ -23,9 +23,8 @@ export interface Diagnosis {
   detectedParasitesCount?: number;
   imgURL?: string;
   detections?: DetectionDetail[];
-  // NUEVO: Almacenará las detecciones agrupadas por su fotograma correspondiente
-  frameDetections?: DetectionDetail[][];
-  detectedParasites?: { label: string; value: number }[];
+  frameDetections?: DetectionDetail[][]; // Añadido para persistir la segmentación por fotograma
+  detectedParasites?: { label: string; value: number }[]; // Añadido para persistir la tabla de agregación
 }
 
 export interface DetectionFrame {

@@ -13,10 +13,7 @@ interface HistoryState {
     imageFiles: Blob[]
   ) => Promise<number>;
   loadFrameForDiagnosis: (diagnosisId: number) => Promise<Blob | null>;
-
-  // 1. Añadimos el tipo aquí en la interfaz
   loadAllFramesForDiagnosis: (diagnosisId: number) => Promise<any[]>;
-
   clearSelectedFrame: () => void;
 }
 
@@ -88,7 +85,6 @@ export const useHistoryStore = create<HistoryState>((set) => ({
     }
   },
 
-  // 2. Insertamos la nueva función aquí, cerca de las consultas de fotogramas
   loadAllFramesForDiagnosis: async (diagnosisId: number) => {
     try {
       const frames = await db.detectionFrames.where({ diagnosisId }).toArray();

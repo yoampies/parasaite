@@ -20,6 +20,7 @@ import { IBoundingBox } from '../types';
 export interface CapturedFrameData {
   blob: Blob;
   detections: IBoundingBox[];
+  isProcessed?: boolean; // NUEVO: Marcador para saber si la IA ya corrió sobre este frame
 }
 
 export const Scanner: React.FC = () => {
@@ -166,7 +167,11 @@ export const Scanner: React.FC = () => {
       canvas.toBlob((blob) => {
         if (blob) {
           const frozenDetections = liveDetections ? [...liveDetections] : [];
-          setCapturedFrames((prev) => [...prev, { blob, detections: frozenDetections }]);
+          // Marcar explícitamente como procesado porque viene del stream en vivo
+          setCapturedFrames((prev) => [
+            ...prev,
+            { blob, detections: frozenDetections, isProcessed: true },
+          ]);
           setShowCaptureFlash(true);
           setTimeout(() => setShowCaptureFlash(false), 200);
         }
@@ -178,7 +183,8 @@ export const Scanner: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setCapturedImage(file);
-      setCapturedFrames((prev) => [...prev, { blob: file, detections: [] }]);
+      // Marcar como NO procesado para que ScannerResults se encargue de correr el modelo
+      setCapturedFrames((prev) => [...prev, { blob: file, detections: [], isProcessed: false }]);
     }
   };
 
@@ -202,14 +208,12 @@ export const Scanner: React.FC = () => {
         { classId: 0, confidence: 0 }
       );
 
-      // Conservamos la lista plana para consultas genéricas rápidas
       const formattedDetections = allDetections.map((d) => ({
         class: parasiteTypes[d.classId] || 'Parásito',
         bbox: d.box,
         confidence: d.confidence,
       }));
 
-      // NUEVO: Agrupamos las detecciones respetando a qué fotograma pertenecen
       const formattedFrameDetections = capturedFrames.map((frame) =>
         (frame.detections || []).map((d) => ({
           class: parasiteTypes[d.classId] || 'Parásito',
@@ -228,7 +232,7 @@ export const Scanner: React.FC = () => {
         confidence: topDetection.confidence,
         detectedParasitesCount: allDetections.length,
         detections: formattedDetections,
-        frameDetections: formattedFrameDetections, // Guardado estructurado
+        frameDetections: formattedFrameDetections,
       };
 
       const diagnosisId = await saveDiagnosis(initialDiagnosisData, allFrameBlobs);

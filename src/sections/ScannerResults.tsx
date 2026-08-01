@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ChevronLeft, ChevronRight, User, Save, Printer, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, Save, Printer, ArrowLeft, Sparkles } from 'lucide-react';
 
 import Table from '../components/Table';
 import HorizontalBarChart from '../components/HorizontalBarChart';
@@ -29,7 +29,8 @@ export function ScannerResults() {
 
   const [analysis, setAnalysis] = useState<IAnalysis | null>(null);
   const [frameUrls, setFrameUrls] = useState<string[]>([]);
-  const [frameDetections, setFrameDetections] = useState<IBoundingBox[][]>([]);
+  const [frameDetections, setFrameDetections] = useState<(IBoundingBox[] | undefined)[]>([]);
+  const [processedFrames, setProcessedFrames] = useState<Record<number, boolean>>({});
   const [currentFrameIndex, setCurrentFrameIndex] = useState<number>(0);
 
   const [savedDetections, setSavedDetections] = useState<IBoundingBox[] | null>(null);
@@ -60,28 +61,35 @@ export function ScannerResults() {
         primaryImageBlob?: Blob;
         analysis?: IAnalysis;
       };
+
       const passedFrames = locationState?.capturedFrames || [];
+      const isFromScanner = passedFrames.length > 0;
 
       if (passedFrames.length > 0) {
-        const detectionsList: IBoundingBox[][] = [];
+        const detectionsList: (IBoundingBox[] | undefined)[] = [];
+        const initialProcessed: Record<number, boolean> = {};
 
-        passedFrames.forEach((frame) => {
+        passedFrames.forEach((frame, idx) => {
           if (typeof frame === 'object' && 'blob' in frame) {
             const frameObj = frame as CapturedFrameData;
             generatedUrls.push(URL.createObjectURL(frameObj.blob));
             detectionsList.push(frameObj.detections || []);
+            if (frameObj.isProcessed) {
+              initialProcessed[idx] = true;
+            }
           } else if (frame instanceof Blob) {
             generatedUrls.push(URL.createObjectURL(frame));
-            detectionsList.push([]);
+            detectionsList.push(undefined);
           } else if (typeof frame === 'string') {
             generatedUrls.push(frame);
-            detectionsList.push([]);
+            detectionsList.push(undefined);
           }
         });
 
         if (isMounted) {
           setFrameUrls(generatedUrls);
           setFrameDetections(detectionsList);
+          setProcessedFrames(initialProcessed);
         }
       }
 
@@ -91,7 +99,7 @@ export function ScannerResults() {
           const diagRecord = await db.diagnoses.get(idNum);
 
           if (diagRecord && isMounted) {
-            setIsHistoricalRecord(true);
+            setIsHistoricalRecord(!isFromScanner);
 
             if (diagRecord.patientLocalId) {
               setSelectedPatientId(diagRecord.patientLocalId);
@@ -116,7 +124,6 @@ export function ScannerResults() {
               setFrameUrls([...generatedUrls]);
             }
 
-            // CORRECCIÓN B: Cargar y respetar las cajas de cada fotograma individualmente
             if (diagRecord.frameDetections && diagRecord.frameDetections.length > 0) {
               const mappedFrames: IBoundingBox[][] = diagRecord.frameDetections.map((frame) =>
                 frame.map((d) => {
@@ -129,10 +136,15 @@ export function ScannerResults() {
                   };
                 })
               );
-              setFrameDetections(mappedFrames);
-              setSavedDetections(mappedFrames.flat()); // Para consistencia de fallback si hiciera falta
+
+              if (!isFromScanner) {
+                setFrameDetections(mappedFrames);
+                const histProcessed: Record<number, boolean> = {};
+                mappedFrames.forEach((_, idx) => (histProcessed[idx] = true));
+                setProcessedFrames(histProcessed);
+              }
+              setSavedDetections(mappedFrames.flat());
             } else if (diagRecord.detections && diagRecord.detections.length > 0) {
-              // Backward compatibility si el registro viejo no tiene `frameDetections`
               const mappedBoxes: IBoundingBox[] = diagRecord.detections.map(
                 (d: DetectionDetail) => {
                   const classIdx = parasiteTypes.indexOf(d.class);
@@ -146,9 +158,17 @@ export function ScannerResults() {
               );
               const detectionsPerFrame = generatedUrls.map(() => mappedBoxes);
               setSavedDetections(mappedBoxes);
-              setFrameDetections(detectionsPerFrame);
-            } else {
+              if (!isFromScanner) {
+                setFrameDetections(detectionsPerFrame);
+                const histProcessed: Record<number, boolean> = {};
+                detectionsPerFrame.forEach((_, idx) => (histProcessed[idx] = true));
+                setProcessedFrames(histProcessed);
+              }
+            } else if (!isFromScanner) {
               setFrameDetections(generatedUrls.map(() => []));
+              const histProcessed: Record<number, boolean> = {};
+              generatedUrls.forEach((_, idx) => (histProcessed[idx] = true));
+              setProcessedFrames(histProcessed);
             }
 
             setAnalysis({
@@ -217,6 +237,7 @@ export function ScannerResults() {
   useEffect(() => {
     const hasSaved = savedDetections && savedDetections.length > 0;
     const hasFrozen = currentFrozenDetections && currentFrozenDetections.length > 0;
+    const isProcessed = processedFrames[currentFrameIndex];
 
     if (
       !isFetchingLocal &&
@@ -224,7 +245,8 @@ export function ScannerResults() {
       imageLoaded &&
       imgRef.current &&
       !hasSaved &&
-      !hasFrozen
+      !hasFrozen &&
+      !isProcessed
     ) {
       processSource(imgRef.current);
     }
@@ -236,19 +258,34 @@ export function ScannerResults() {
     currentFrozenDetections,
     isFetchingLocal,
     isHistoricalRecord,
+    processedFrames,
   ]);
 
-  // CORRECCIÓN: Respetar las detecciones puras de la diapositiva actual sobre cualquier cosa
-  const activeDetections = useMemo(() => {
-    if (currentFrozenDetections !== undefined) {
-      // Si el frame no tiene hallazgos, no inventamos. Se devuelve vacío.
-      return currentFrozenDetections;
+  useEffect(() => {
+    if (!isHistoricalRecord && !isLoading && liveDetections) {
+      setFrameDetections((prev) => {
+        const newDetections = [...prev];
+        newDetections[currentFrameIndex] = liveDetections;
+        return newDetections;
+      });
+      setProcessedFrames((prev) => ({ ...prev, [currentFrameIndex]: true }));
     }
+  }, [liveDetections, isLoading, currentFrameIndex, isHistoricalRecord]);
 
-    // Fallback de retrocompatibilidad
-    if (savedDetections && savedDetections.length > 0) return savedDetections;
+  const activeDetections = useMemo(() => {
+    if (processedFrames[currentFrameIndex]) {
+      return currentFrozenDetections || [];
+    }
+    if (isHistoricalRecord && savedDetections && savedDetections.length > 0) return savedDetections;
     return liveDetections || [];
-  }, [savedDetections, currentFrozenDetections, liveDetections]);
+  }, [
+    savedDetections,
+    currentFrozenDetections,
+    liveDetections,
+    processedFrames,
+    currentFrameIndex,
+    isHistoricalRecord,
+  ]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -297,12 +334,16 @@ export function ScannerResults() {
     });
   }, [activeDetections, imageLoaded, currentFrameIndex]);
 
-  // CORRECCIÓN: La tabla y las gráficas deben sumar todos los parásitos encontrados en la MUESTRA, no solo en la foto que estás viendo en ese segundo.
   const aggregatedData = useMemo<IDetectedParasite[]>(() => {
     let boxesToAggregate: IBoundingBox[] = [];
 
-    if (frameDetections && frameDetections.length > 0) {
-      boxesToAggregate = frameDetections.flat();
+    const flatFrames = frameDetections
+      .filter((_, idx) => processedFrames[idx])
+      .flat()
+      .filter(Boolean) as IBoundingBox[];
+
+    if (flatFrames.length > 0) {
+      boxesToAggregate = flatFrames;
     } else if (activeDetections && activeDetections.length > 0) {
       boxesToAggregate = activeDetections;
     }
@@ -329,7 +370,54 @@ export function ScannerResults() {
       label: p.label,
       value: Number(((p.sum / p.count) * 100).toFixed(2)),
     }));
-  }, [frameDetections, activeDetections]);
+  }, [frameDetections, activeDetections, processedFrames]);
+
+  useEffect(() => {
+    const autoUpdateDB = async () => {
+      if (
+        !isHistoricalRecord &&
+        !isLoading &&
+        analysisId &&
+        Object.keys(processedFrames).length > 0
+      ) {
+        const idNum = Number(analysisId);
+        if (isNaN(idNum)) return;
+
+        const frameDetectionsToSave = frameDetections.map((frame) =>
+          (frame || []).map((d) => ({
+            bbox: d.box,
+            class: parasiteTypes[d.classId] || 'Desconocido',
+            confidence: d.confidence,
+          }))
+        );
+
+        const flatDetectionsToSave = frameDetectionsToSave.flat();
+
+        let topParasite = 'Sin hallazgos parasitarios';
+        let topConfidence = 0;
+
+        if (flatDetectionsToSave.length > 0) {
+          const topDetection = flatDetectionsToSave.reduce(
+            (prev, current) => (prev.confidence > current.confidence ? prev : current),
+            flatDetectionsToSave[0]
+          );
+          topParasite = topDetection.class;
+          topConfidence = topDetection.confidence;
+        }
+
+        await db.diagnoses.update(idNum, {
+          detections: flatDetectionsToSave,
+          frameDetections: frameDetectionsToSave,
+          detectedParasites: aggregatedData,
+          parasiteFound: topParasite,
+          confidence: topConfidence,
+          detectedParasitesCount: flatDetectionsToSave.length,
+        });
+      }
+    };
+
+    autoUpdateDB();
+  }, [frameDetections, aggregatedData, analysisId, isHistoricalRecord, isLoading, processedFrames]);
 
   const handlePrevFrame = () => {
     setImageLoaded(false);
@@ -356,7 +444,7 @@ export function ScannerResults() {
       const idNum = Number(analysisId);
 
       const frameDetectionsToSave = frameDetections.map((frame) =>
-        frame.map((d) => ({
+        (frame || []).map((d) => ({
           bbox: d.box,
           class: parasiteTypes[d.classId] || 'Desconocido',
           confidence: d.confidence,
@@ -365,11 +453,26 @@ export function ScannerResults() {
 
       const flatDetectionsToSave = frameDetectionsToSave.flat();
 
+      let topParasite = 'Sin hallazgos parasitarios';
+      let topConfidence = 0;
+
+      if (flatDetectionsToSave.length > 0) {
+        const topDetection = flatDetectionsToSave.reduce(
+          (prev, current) => (prev.confidence > current.confidence ? prev : current),
+          flatDetectionsToSave[0]
+        );
+        topParasite = topDetection.class;
+        topConfidence = topDetection.confidence;
+      }
+
       await db.diagnoses.update(idNum, {
         patientLocalId: selectedPatientId,
         detections: flatDetectionsToSave,
-        frameDetections: frameDetectionsToSave, // Grabamos la nueva estructura de aislamiento
+        frameDetections: frameDetectionsToSave,
         detectedParasites: aggregatedData,
+        parasiteFound: topParasite,
+        confidence: topConfidence,
+        detectedParasitesCount: flatDetectionsToSave.length,
         isSynced: false,
       });
 
@@ -441,14 +544,24 @@ export function ScannerResults() {
   }
 
   const currentFrameUrl = frameUrls[currentFrameIndex] || analysis?.imgURL || '';
+
+  // CORRECCIÓN: Nueva validación booleana
   const isAnalyzingWithModel =
-    isLoading &&
-    !isHistoricalRecord &&
-    !savedDetections &&
-    (!currentFrozenDetections || currentFrozenDetections.length === 0);
+    isLoading && !isHistoricalRecord && !processedFrames[currentFrameIndex];
 
   return (
     <div className="relative flex size-full min-h-screen flex-col bg-white font-inter overflow-x-hidden print:bg-white print:text-black print:p-0">
+      <style>{`
+        @keyframes scanline {
+          0% { top: 0%; opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+        .animate-scanline {
+          animation: scanline 2.5s linear infinite;
+        }
+      `}</style>
       <div className="layout-container flex h-full grow flex-col">
         <div className="hidden print:block print:p-[0.5in] print:pb-4 print:mb-4 print:border-b-2 print:border-slate-800">
           <div className="flex justify-between items-center">
@@ -513,15 +626,25 @@ export function ScannerResults() {
                 />
 
                 <div
-                  className={`absolute inset-0 flex items-center justify-center bg-black/60 text-white backdrop-blur-sm flex-col z-30 transition-opacity duration-300 print:hidden ${
-                    isAnalyzingWithModel ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                  className={`absolute inset-0 z-30 transition-opacity duration-500 print:hidden ${
+                    isAnalyzingWithModel
+                      ? 'opacity-100 pointer-events-auto'
+                      : 'opacity-0 pointer-events-none'
                   }`}
                 >
-                  <p className="text-sm font-medium">
-                    Analizando fotograma {currentFrameIndex + 1} con YOLOv8...
-                  </p>
-                  <div className="w-1/2 h-1.5 bg-white/20 rounded-full mt-3 overflow-hidden">
-                    <div className="h-full bg-[#00c795] animate-pulse w-full" />
+                  <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" />
+
+                  {/* UI Central */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                    <div className="relative flex items-center justify-center w-20 h-20 mb-4">
+                      <div className="absolute inset-0 border-4 border-[#dae7e3]/20 rounded-full" />
+                      <div className="absolute inset-0 border-4 border-[#00c795] rounded-full border-t-transparent animate-spin" />
+                      <Sparkles className="w-7 h-7 text-[#00c795] animate-pulse" />
+                    </div>
+                    <h3 className="text-lg font-bold tracking-wide">Procesando Inferencia</h3>
+                    <p className="text-sm font-medium text-[#00c795] mt-1 animate-pulse">
+                      YOLOv8 analizando fotograma {currentFrameIndex + 1} de {frameUrls.length}...
+                    </p>
                   </div>
                 </div>
               </div>
