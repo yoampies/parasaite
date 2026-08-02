@@ -20,7 +20,7 @@ import { IBoundingBox } from '../types';
 export interface CapturedFrameData {
   blob: Blob;
   detections: IBoundingBox[];
-  isProcessed?: boolean; // NUEVO: Marcador para saber si la IA ya corrió sobre este frame
+  isProcessed?: boolean;
 }
 
 export const Scanner: React.FC = () => {

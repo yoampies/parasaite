@@ -5,7 +5,6 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { ChevronLeft, ChevronRight, User, Save, Printer, ArrowLeft, Sparkles } from 'lucide-react';
 
 import Table from '../components/Table';
-import HorizontalBarChart from '../components/HorizontalBarChart';
 import Error from '../components/Error';
 
 import {
@@ -545,12 +544,19 @@ export function ScannerResults() {
 
   const currentFrameUrl = frameUrls[currentFrameIndex] || analysis?.imgURL || '';
 
-  // CORRECCIÓN: Nueva validación booleana
   const isAnalyzingWithModel =
     isLoading && !isHistoricalRecord && !processedFrames[currentFrameIndex];
 
+  // Resolver nombre de paciente para reporte
+  const patientRecord = patients?.find(
+    (p) => (p.localId || p.id?.toString()) === selectedPatientId
+  );
+  const patientDisplayName = patientRecord
+    ? `${patientRecord.name} (ID: ${patientRecord.localId || patientRecord.id})`
+    : selectedPatientId || 'Anónimo';
+
   return (
-    <div className="relative flex size-full min-h-screen flex-col bg-white font-inter overflow-x-hidden print:bg-white print:text-black print:p-0">
+    <div className="print-container relative flex size-full min-h-screen flex-col bg-[#f8faf9] font-inter overflow-x-hidden print:bg-white print:text-black print:p-0">
       <style>{`
         @keyframes scanline {
           0% { top: 0%; opacity: 0; }
@@ -563,6 +569,7 @@ export function ScannerResults() {
         }
       `}</style>
       <div className="layout-container flex h-full grow flex-col">
+        {/* Encabezado visible únicamente en impresión */}
         <div className="hidden print:block print:p-[0.5in] print:pb-4 print:mb-4 print:border-b-2 print:border-slate-800">
           <div className="flex justify-between items-center">
             <div>
@@ -576,15 +583,15 @@ export function ScannerResults() {
                 <strong>Fecha:</strong> {new Date().toLocaleDateString()}
               </p>
               <p>
-                <strong>Paciente ID:</strong> {selectedPatientId || 'Anónimo'}
+                <strong>Paciente:</strong> {patientDisplayName}
               </p>
             </div>
           </div>
         </div>
 
-        <main className="gap-1 px-6 flex flex-1 justify-center py-5 print:p-[0.5in] print:py-0 print:w-[8.5in] print:max-w-none print:m-0">
-          <div className="layout-content-container flex flex-col max-w-[920px] flex-1">
-            <header className="flex flex-wrap justify-between items-center gap-3 p-4 print:hidden">
+        <main className="flex flex-1 justify-center p-4 sm:p-6 print:p-[0.5in] print:py-0 print:w-[8.5in] print:max-w-none print:m-0">
+          <div className="layout-content-container flex flex-col max-w-[1200px] flex-1 gap-6">
+            <header className="flex flex-wrap justify-between items-center gap-3 bg-white p-6 rounded-2xl border border-[#dae7e3] shadow-sm print:hidden">
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => navigate(-1)}
@@ -606,16 +613,17 @@ export function ScannerResults() {
             </header>
 
             <section
-              className="flex flex-col w-full bg-white p-4 justify-center items-center rounded-2xl border border-[#dae7e3] shadow-sm print:p-0 print:border-0"
+              className="flex flex-col w-full bg-white p-4 justify-center items-center rounded-2xl border border-[#dae7e3] shadow-sm print:p-0 print:border-0 print:shadow-none"
               ref={scannerContainerRef}
             >
-              <div className="relative inline-block max-w-full bg-slate-900 rounded-xl overflow-hidden border border-[#dae7e3] print:border-slate-300">
+              {/* Layout interactivo en pantalla (Carrusel) */}
+              <div className="relative inline-block max-w-full bg-slate-900 rounded-xl overflow-hidden border border-[#dae7e3] print:hidden">
                 {currentFrameUrl && (
                   <img
                     ref={imgRef}
                     src={currentFrameUrl}
                     alt={`Fotograma ${currentFrameIndex + 1}`}
-                    className="max-h-[480px] w-auto block object-contain z-0 print:max-h-[400px]"
+                    className="max-h-[480px] w-auto block object-contain z-0"
                     onLoad={() => setImageLoaded(true)}
                   />
                 )}
@@ -626,7 +634,7 @@ export function ScannerResults() {
                 />
 
                 <div
-                  className={`absolute inset-0 z-30 transition-opacity duration-500 print:hidden ${
+                  className={`absolute inset-0 z-30 transition-opacity duration-500 ${
                     isAnalyzingWithModel
                       ? 'opacity-100 pointer-events-auto'
                       : 'opacity-0 pointer-events-none'
@@ -634,7 +642,6 @@ export function ScannerResults() {
                 >
                   <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" />
 
-                  {/* UI Central */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
                     <div className="relative flex items-center justify-center w-20 h-20 mb-4">
                       <div className="absolute inset-0 border-4 border-[#dae7e3]/20 rounded-full" />
@@ -672,9 +679,27 @@ export function ScannerResults() {
                   </button>
                 </div>
               )}
+
+              {/* Layout en impresión (Grid de Capturas Múltiples) */}
+              {frameUrls.length > 0 && (
+                <div className="hidden print:grid print:grid-cols-2 print:gap-4 print:w-full print:mt-4">
+                  {frameUrls.map((frame, index) => (
+                    <div key={index} className="break-inside-avoid flex flex-col items-center">
+                      <img
+                        src={frame}
+                        alt={`Captura ${index + 1}`}
+                        className="max-h-[250px] object-contain border border-slate-300 rounded-lg"
+                      />
+                      <span className="text-xs mt-2 text-slate-700 font-semibold">
+                        Fotograma {index + 1}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
 
-            <section className="bg-white p-5 rounded-2xl border border-[#dae7e3] shadow-sm mt-6 print:hidden">
+            <section className="bg-white p-5 rounded-2xl border border-[#dae7e3] shadow-sm print:hidden">
               <div className="flex items-center gap-2 text-[#101816] font-bold text-base mb-3">
                 <User className="w-5 h-5 text-[#00c795]" />
                 <span>Vincular Registro con Paciente</span>
@@ -707,7 +732,7 @@ export function ScannerResults() {
               </div>
             </section>
 
-            <section className="py-4 print:px-0">
+            <section className="py-2 print:px-0">
               <h3 className="text-[#101816] text-lg font-bold leading-tight mb-3">
                 Parásitos Identificados
               </h3>
@@ -718,39 +743,7 @@ export function ScannerResults() {
               />
             </section>
 
-            <div className="hidden print:block print:pt-16">
-              <div className="flex justify-between items-end px-12">
-                <div className="text-center w-64 border-t border-slate-800 pt-2">
-                  <p className="text-xs font-semibold text-slate-800">Firma del Especialista</p>
-                </div>
-                <div className="text-center w-64 border-t border-slate-800 pt-2">
-                  <p className="text-xs font-semibold text-slate-800">Sello Institucional</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <aside className="layout-content-container flex flex-col w-[360px] hidden xl:flex print:hidden">
-            <h3 className="text-[#101816] text-base font-bold px-4 pt-2">
-              Distribución por Confianza
-            </h3>
-
-            <div className="px-4 py-3">
-              <div className="rounded-xl border border-[#dae7e3] p-4 bg-[#fbfcfc]">
-                <p className="text-xs font-semibold uppercase text-gray-400 mb-2">
-                  Promedio por Especie
-                </p>
-                <div className="h-[200px]">
-                  <HorizontalBarChart
-                    data={
-                      aggregatedData.length > 0 ? aggregatedData : analysis?.detectedParasites || []
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-
-            <section className="p-4 bg-[#f0f5f4] m-4 rounded-2xl border border-[#dae7e3] flex flex-col gap-3">
+            <section className="p-4 bg-[#f0f5f4] rounded-2xl border border-[#dae7e3] flex flex-col gap-3">
               <div>
                 <h3 className="text-[#101816] text-sm font-bold mb-1">
                   Validación Experta (Active Learning)
@@ -834,7 +827,18 @@ export function ScannerResults() {
                 )}
               </div>
             </section>
-          </aside>
+
+            <div className="hidden print:block print:pt-16">
+              <div className="flex justify-between items-end px-12">
+                <div className="text-center w-64 border-t border-slate-800 pt-2">
+                  <p className="text-xs font-semibold text-slate-800">Firma del Especialista</p>
+                </div>
+                <div className="text-center w-64 border-t border-slate-800 pt-2">
+                  <p className="text-xs font-semibold text-slate-800">Sello Institucional</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </main>
       </div>
     </div>
